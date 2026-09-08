@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="GuardSkill scans a project for git settings that let a repository run code in a coding agent. Read-only, open source, no dependencies.">
+<title>GuardSkill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#F5F6F4;
+    --surface:#FFFFFF;
+    --terminal:#14171C;
+    --terminal-ink:#D8DCE2;
+    --ink:#15181D;
+    --ink-soft:#4A515C;
+    --ink-faint:#767E8A;
+    --rule:#DDE0DC;
+    --rule-strong:#C3C8C2;
+    --accent:#B4791B;
+    --accent-soft:#F3E7CE;
+    --alarm:#B23A2F;
+    --ok:#3C7A5E;
+    --shadow:0 1px 0 rgba(21,24,29,.04);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0E1116;
+      --surface:#151920;
+      --terminal:#0A0D11;
+      --terminal-ink:#D8DCE2;
+      --ink:#E7EAEE;
+      --ink-soft:#A2AAB6;
+      --ink-faint:#727B88;
+      --rule:#232935;
+      --rule-strong:#333B49;
+      --accent:#E0A34A;
+      --accent-soft:#2A2317;
+      --alarm:#E0685A;
+      --ok:#5FBE96;
+      --shadow:none;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0E1116;
+    --surface:#151920;
+    --terminal:#0A0D11;
+    --terminal-ink:#D8DCE2;
+    --ink:#E7EAEE;
+    --ink-soft:#A2AAB6;
+    --ink-faint:#727B88;
+    --rule:#232935;
+    --rule-strong:#333B49;
+    --accent:#E0A34A;
+    --accent-soft:#2A2317;
+    --alarm:#E0685A;
+    --ok:#5FBE96;
+    --shadow:none;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
+    font-size:16.5px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:56px 24px 96px;display:flex;flex-direction:column;gap:56px}
+
+  .eyebrow{
+    font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+  h1{
+    font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-weight:600;font-size:clamp(28px,4.4vw,40px);line-height:1.18;
+    letter-spacing:-.022em;margin:14px 0 0;text-wrap:balance;
+  }
+  h2{
+    font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-weight:600;font-size:17px;letter-spacing:-.01em;margin:0 0 4px;
+  }
+  .lede{font-size:18.5px;color:var(--ink-soft);margin:18px 0 0;max-width:64ch}
+  p{margin:0 0 14px;max-width:66ch}
+  p:last-child{margin-bottom:0}
+  a{color:var(--ink);text-decoration-color:var(--rule-strong);text-underline-offset:3px}
+  a:hover{text-decoration-color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+  code{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
+
+  section{display:flex;flex-direction:column;gap:14px}
+  .rule{height:1px;background:var(--rule);border:0;margin:0}
+
+  .install{
+    background:var(--terminal);color:var(--terminal-ink);
+    font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:15px;padding:16px 18px;border-radius:4px;
+    display:flex;align-items:center;gap:12px;overflow-x:auto;
+  }
+  .install .prompt{color:var(--accent)}
+  .install .note{margin-left:auto;font-size:12px;color:#6D7581;white-space:nowrap}
+
+  .terminal{
+    background:var(--terminal);border-radius:4px;overflow:hidden;
+    border:1px solid var(--rule);
+  }
+  .terminal .bar{
+    padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07);
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;
+    letter-spacing:.1em;text-transform:uppercase;color:#6D7581;
+  }
+  pre{
+    margin:0;padding:18px;overflow-x:auto;
+    font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:13.5px;line-height:1.72;color:var(--terminal-ink);
+  }
+  pre .cmd{color:#8FA3BD}
+  pre .crit{color:#E0685A;font-weight:600}
+  pre .dim{color:#6D7581}
+  pre .key{color:#E0A34A}
+  pre .ok{color:#5FBE96}
+
+  .checks{display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid var(--rule)}
+  .check{
+    display:grid;grid-template-columns:150px 1fr;gap:20px;
+    padding:14px 0;border-bottom:1px solid var(--rule);align-items:baseline;
+  }
+  .check dt{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);
+  }
+  .check dd{margin:0;font-size:15px;color:var(--ink-soft)}
+  .check dd code{color:var(--ink);font-size:13px}
+  @media (max-width:560px){ .check{grid-template-columns:1fr;gap:4px} }
+
+  .stats{display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+  .stat{flex:1 1 150px;padding:16px 20px 16px 0;border-right:1px solid var(--rule)}
+  .stat:last-child{border-right:0}
+  .stat b{
+    display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+  }
+  .stat span{font-size:13px;color:var(--ink-faint)}
+
+  .callout{
+    border-left:2px solid var(--accent);background:var(--accent-soft);
+    padding:14px 18px;border-radius:0 3px 3px 0;
+  }
+  .callout p{margin:0;font-size:15px;color:var(--ink-soft)}
+
+  .cta{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .btn{
+    display:inline-block;padding:9px 16px;border-radius:3px;
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13.5px;
+    text-decoration:none;border:1px solid var(--rule-strong);color:var(--ink);
+  }
+  .btn.primary{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+  .btn:hover{border-color:var(--accent)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  footer{font-size:13.5px;color:var(--ink-faint);display:flex;flex-direction:column;gap:6px}
+  footer a{color:var(--ink-soft)}
+</style>
+<style>html{color-scheme:light dark}body{margin:0}img{max-width:100%}</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Open source · MIT · Helios IT Solutions</div>
+    <h1>A repository can run code the moment your agent opens it.</h1>
+    <p class="lede">Git reads <code>core.fsmonitor</code> and a dozen similar keys from the project's own <code>.git/config</code>, and coding agents run <code>git status</code> before you have typed anything. GuardSkill reads those settings first and tells you what is in them.</p>
+    <div class="install" style="margin-top:22px">
+      <span class="prompt">$</span><span>npx guardskill .</span>
+      <span class="note">no install · no account · reads only</span>
+    </div>
+  </header>
+
+  <hr class="rule">
+
+  <section>
+    <h2>What actually happens</h2>
+    <p>A project arrives as a zip from a client, a folder on a shared drive, an archive your agent unpacked. Somewhere in it sits a line like this:</p>
+    <div class="terminal">
+      <div class="bar">.git/config</div>
+<pre><span class="dim">[core]</span>
+        repositoryformatversion = 0
+        <span class="key">fsmonitor</span> = <span class="crit">/tmp/.cache/fsmonitor-helper.sh</span></pre>
+    </div>
+    <p>Git invokes that command while refreshing the index — during <code>git status</code>, <code>git diff</code>, <code>git add</code>. It runs with your privileges, outside any sandbox, before a single prompt reaches you.</p>
+    <p>Manifold Security found eight of these issues across seven coding agents, and their note on delivery is the part most people miss: cloning a hostile URL does <em>not</em> trigger it, because <code>.git/config</code> never travels with a clone. The project has to arrive as files. And <a href="https://github.com/advisories/GHSA-9ccr-r5hg-74gf">CVE-2026-45033</a> in GitHub Copilot CLI (CVSS 8.5) shows that a single bare repository hidden in a subdirectory is enough on its own — git finds it while walking the tree and applies its config.</p>
+  </section>
+
+  <section>
+    <h2>What a scan looks like</h2>
+    <div class="terminal">
+      <div class="bar">terminal</div>
+<pre><span class="cmd">$ npx guardskill ~/clients/handover-package</span>
+
+GuardSkill - git execution-vector scan (read-only)
+Path: /Users/dev/clients/handover-package
+Git configurations inspected: 3   Directories walked: 412
+
+<span class="crit">[CRITICAL]</span> vendor/tooling.git - Bare git repository found inside the project tree
+  <span class="dim">what</span>   Git discovers bare repositories while walking directories and applies
+         their configuration, including keys that execute commands.
+  <span class="dim">found</span>  bare repository at vendor/tooling.git
+  <span class="dim">do</span>     Do not open this project with a coding agent until you have
+         inspected the directory.
+
+<span class="crit">[CRITICAL]</span> vendor/tooling.git/config:4 - core.fsmonitor runs an external command
+  <span class="dim">found</span>  core.fsmonitor = /tmp/.cache/fsmonitor-helper.sh
+
+2 critical, 0 high, 0 medium, 0 low.
+Nothing was changed - this scan only reads.
+<span class="dim">Tip: git config --global safe.bareRepository explicit  stops git from
+discovering bare repositories automatically.</span></pre>
+    </div>
+    <p>Exit code 1 when something lands at or above your threshold, so it drops into CI as one line.</p>
+  </section>
+
+  <section>
+    <h2>What it checks</h2>
+    <dl class="checks">
+      <div class="check"><dt>Direct execution</dt><dd><code>core.fsmonitor</code>, <code>core.sshCommand</code>, <code>core.gitProxy</code>, <code>core.pager</code>, <code>core.editor</code>, <code>sequence.editor</code>, <code>diff.external</code>, <code>uploadpack.packObjectsHook</code></dd></div>
+      <div class="check"><dt>Indirect execution</dt><dd><code>filter.*.clean/smudge/process</code>, <code>diff.*.textconv</code>, <code>merge.*.driver</code>, <code>mergetool.*.cmd</code>, <code>credential.helper</code></dd></div>
+      <div class="check"><dt>Shell aliases</dt><dd>any <code>alias.*</code> whose value starts with <code>!</code></dd></div>
+      <div class="check"><dt>Deferred config</dt><dd><code>include.path</code> and <code>includeIf.*.path</code>, which can introduce any of the above later</dd></div>
+      <div class="check"><dt>Hooks</dt><dd><code>core.hooksPath</code> overrides, active scripts in <code>.git/hooks</code>, and hooks that pipe a download into a shell or decode base64 before running it</dd></div>
+      <div class="check"><dt>Structure</dt><dd>bare repositories anywhere in the tree, nested <code>.git</code> directories that are not registered submodules</dd></div>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Why it does not cry wolf</h2>
+    <div class="stats">
+      <div class="stat"><b>29</b><span>clean repositories that must stay silent</span></div>
+      <div class="stat"><b>22</b><span>attack patterns that must each be caught</span></div>
+      <div class="stat"><b>0</b><span>runtime dependencies</span></div>
+    </div>
+    <p>A security tool that flags every project gets uninstalled in a week. husky, lefthook, git-lfs, git-crypt, registered submodules, credential helpers and custom pagers all appear in the clean fixture set, and the build fails if any of them produces a finding above informational. The suite also fails if a hostile fixture is caught by the wrong rule — catching it for the wrong reason is not catching it.</p>
+    <div class="callout">
+      <p>Recognised hook managers are reported as informational, not as a risk — but GuardSkill still reads the scripts, and escalates to critical if one of them fetches or decodes code before it runs.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What it will not do</h2>
+    <p>It never writes to the project it scans and never executes anything it finds. It makes no network calls and collects no telemetry, so it behaves identically offline. It has no dependencies, so installing it does not pull in a supply chain of its own. And it does not follow symlinks — a link inside a hostile repository cannot walk the scanner out of its target.</p>
+    <p>It is a signal, not a verdict. Every finding shows the file, the line and the exact value, so you decide.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <div class="cta">
+      <a class="btn primary" href="https://www.npmjs.com/package/guardskill">Run it: npx guardskill .</a>
+      <a class="btn" href="https://github.com/soemoescode/guardskill">Source and detection rules</a>
+    </div>
+    <p style="margin-top:12px;color:var(--ink-soft);font-size:15px">Need this across an organisation? Helios IT runs the scan over every repository and developer machine, reviews your agent configuration, and delivers a report with a policy your team can actually follow. <a href="https://helios-it.nl">Ask us about an agent security review</a>.</p>
+  </section>
+
+  <footer>
+    <div>Built and maintained by <a href="https://helios-it.nl">Helios IT Solutions</a>, Amsterdam. MIT licensed.</div>
+    <div>Sources: <a href="https://www.manifold.security/blog/ai-coding-agents-git-hijack">Manifold Security — GitSpawn</a> · <a href="https://github.com/advisories/GHSA-9ccr-r5hg-74gf">GHSA-9ccr-r5hg-74gf / CVE-2026-45033</a></div>
+  </footer>
+
+</div>
+
+</body>
+</html>
