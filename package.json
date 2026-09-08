@@ -14,9 +14,9 @@
   "engines": { "node": ">=18" },
   "license": "MIT",
   "author": "Helios IT Solutions B.V. (https://helios-it.nl)",
-  "homepage": "https://github.com/REPLACE_OWNER/guardskill#readme",
-  "repository": { "type": "git", "url": "git+https://github.com/REPLACE_OWNER/guardskill.git" },
-  "bugs": { "url": "https://github.com/REPLACE_OWNER/guardskill/issues" },
+  "homepage": "https://github.com/soemoescode/guardskill#readme",
+  "repository": { "type": "git", "url": "git+https://github.com/soemoescode/guardskill.git" },
+  "bugs": { "url": "https://github.com/soemoescode/guardskill/issues" },
   "keywords": ["security", "coding-agent", "ai-agent", "claude-code", "cursor", "copilot", "codex", "git", "gitspawn", "supply-chain", "static-analysis", "cli"],
   "files": ["src", "rules", "SKILL.md", "README.md", "SECURITY.md", "CHANGELOG.md", "LICENSE"],
   "publishConfig": { "access": "public" }
