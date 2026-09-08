@@ -1,0 +1,179 @@
+// The output contract.
+//
+// From v0.4.0 other things depend on this: a CI step reads the exit code, a
+// future hosted layer reads the JSON. Both are pinned here, and both are tested
+// through the CLI rather than through scan(), because the bugs review 01 found
+// (default depth, truncated stdout, exit 0 on a missing path) lived in the CLI
+// and were invisible from the library.
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import { mkdir, writeFile, rm, readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.join(__dirname, '..');
+const CLI = path.join(ROOT, 'src', 'cli.js');
+const WORK = path.join(__dirname, 'fixtures', '.contract');
+
+const cli = (args, opts = {}) => new Promise(resolve => {
+  execFile(process.execPath, [CLI, ...args], { maxBuffer: 64 * 1024 * 1024, ...opts },
+    (err, stdout, stderr) => resolve({ code: err ? (err.code ?? 1) : 0, stdout, stderr }));
+});
+
+async function write(file, content) {
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, content);
+}
+async function repo(name, config) {
+  const dir = path.join(WORK, name);
+  await rm(dir, { recursive: true, force: true });
+  await write(path.join(dir, '.git', 'config'), config);
+  return dir;
+}
+
+const CLEAN = '[core]\n\trepositoryformatversion = 0\n';
+
+test('exit codes: CLEAN 0, FINDINGS 1, ERROR 2, INCOMPLETE 3', async () => {
+  const clean = await repo('clean', CLEAN);
+  assert.equal((await cli([clean, '--no-color'])).code, 0, 'a clean repository must exit 0');
+
+  const findings = await repo('findings', '[core]\n\tfsmonitor = /tmp/payload.sh\n');
+  assert.equal((await cli([findings, '--no-color'])).code, 1, 'a finding at the threshold must exit 1');
+
+  assert.equal((await cli([path.join(WORK, 'does-not-exist'), '--no-color'])).code, 2, 'a missing path must exit 2');
+  assert.equal((await cli([clean, '--fail-on', 'nonsense'])).code, 2, 'a bad option value must exit 2');
+  assert.equal((await cli([clean, '--not-an-option'])).code, 2, 'an unknown option must exit 2');
+  assert.equal((await cli([clean, clean])).code, 2, 'a second positional argument must exit 2, not silently win');
+
+  const deep = await repo('deep', CLEAN);
+  let p = deep;
+  for (let i = 0; i < 6; i++) p = path.join(p, `l${i}`);
+  await mkdir(p, { recursive: true });
+  assert.equal((await cli([deep, '--max-depth', '2', '--no-color'])).code, 3, 'an incomplete walk must exit 3');
+  assert.equal((await cli([deep, '--max-depth', '2', '--allow-incomplete', '--no-color'])).code, 0,
+    '--allow-incomplete must turn that into a pass, deliberately');
+});
+
+test('--fail-on changes severity, never completeness', async () => {
+  const medium = await repo('medium-only', '[init]\n\ttemplateDir = ./tpl\n');
+  assert.equal((await cli([medium, '--no-color'])).code, 0, 'a medium finding is below the default threshold');
+  assert.equal((await cli([medium, '--fail-on', 'medium', '--no-color'])).code, 1, 'lowering the threshold catches it');
+
+  const deep = await repo('deep-b', CLEAN);
+  let p = deep;
+  for (let i = 0; i < 6; i++) p = path.join(p, `l${i}`);
+  await mkdir(p, { recursive: true });
+  assert.equal((await cli([deep, '--max-depth', '2', '--fail-on', 'critical', '--no-color'])).code, 3,
+    'raising --fail-on must not hide an incomplete scan');
+});
+
+test('the JSON output matches the documented schema in all four states', async () => {
+  const required = ['tool', 'version', 'schemaVersion', 'path', 'status', 'scanned', 'reason',
+    'targetCount', 'dirsVisited', 'truncated', 'incompleteReasons', 'summary', 'findings'];
+
+  const clean = await repo('json-clean', CLEAN);
+  const findings = await repo('json-findings', '[core]\n\tfsmonitor = /tmp/payload.sh\n');
+  const incomplete = await repo('json-incomplete', CLEAN);
+  let p = incomplete;
+  for (let i = 0; i < 6; i++) p = path.join(p, `l${i}`);
+  await mkdir(p, { recursive: true });
+
+  const cases = [
+    ['CLEAN', [clean, '--json']],
+    ['FINDINGS', [findings, '--json']],
+    ['INCOMPLETE', [incomplete, '--max-depth', '2', '--json']],
+  ];
+  for (const [expected, args] of cases) {
+    const { stdout } = await cli(args);
+    const doc = JSON.parse(stdout);
+    for (const field of required) {
+      assert.ok(Object.hasOwn(doc, field), `${expected}: JSON is missing the required field "${field}"`);
+    }
+    assert.equal(doc.status, expected, `${expected}: status field`);
+    assert.equal(doc.schemaVersion, 1);
+    assert.equal(doc.tool, 'guardskill');
+    for (const f of doc.findings) {
+      for (const field of ['ruleId', 'severity', 'title', 'explanation', 'remediation', 'location', 'evidence']) {
+        assert.ok(Object.hasOwn(f, field), `${expected}: finding is missing "${field}"`);
+      }
+    }
+  }
+});
+
+test('--json survives a pipe above one megabyte', async () => {
+  // process.exit() after a write to a pipe truncates it. This used to cut the
+  // document at exactly 65,536 bytes, mid-string, with the exit code unchanged.
+  const lines = ['[core]'];
+  for (let i = 0; i < 3000; i++) lines.push(`\tsshCommand = /tmp/payload-with-a-long-enough-name-${String(i).padStart(5, '0')}.sh`);
+  const dir = await repo('big-report', lines.join('\n') + '\n');
+
+  const piped = await cli([dir, '--json']);            // execFile pipes stdout: the failing condition
+  const file = path.join(WORK, 'big-report.json');
+  await cli([dir, '--json'], {}).then(r => writeFile(file, r.stdout));
+
+  assert.ok(piped.stdout.length > 1_000_000, `expected over 1 MB, got ${piped.stdout.length} bytes`);
+  assert.doesNotThrow(() => JSON.parse(piped.stdout),
+    `stdout was truncated at ${piped.stdout.length} bytes`);
+  const onDisk = await readFile(file, 'utf-8');
+  assert.equal(piped.stdout.length, onDisk.length, 'the piped output must be byte-identical in length to the same scan captured whole');
+});
+
+test('no source file calls process.exit after writing to stdout', async () => {
+  // The static half of the same guarantee: a future edit that reintroduces
+  // process.exit() in the CLI would pass every functional test above until the
+  // output happens to cross a buffer boundary.
+  const cliSource = await readFile(CLI, 'utf-8');
+  const offending = cliSource.split('\n')
+    .map((line, i) => ({ line: line.trim(), n: i + 1 }))
+    .filter(l => /process\.exit\s*\(/.test(l.line) && !l.line.startsWith('//'));
+  assert.deepEqual(offending, [],
+    `process.exit() in the CLI truncates buffered stdout; set process.exitCode instead:\n${JSON.stringify(offending)}`);
+});
+
+test('the help text states the same default depth the code uses', async () => {
+  const { DEFAULT_MAX_DEPTH, parseArgs } = await import('../src/cli.js');
+  const { stdout } = await cli(['--help']);
+  const stated = stdout.match(/--max-depth <n>\s+directory depth to walk \(default: (\d+)\)/);
+  assert.ok(stated, 'the help text must state a default depth');
+  assert.equal(Number(stated[1]), DEFAULT_MAX_DEPTH, 'help text and constant disagree');
+  assert.equal(parseArgs([]).maxDepth, DEFAULT_MAX_DEPTH, 'the parsed default disagrees with the constant');
+  assert.equal(DEFAULT_MAX_DEPTH, 24, 'the documented default is 24');
+});
+
+test('a wide tree stays within its measured budget', async () => {
+  // Review 01 measured 8,721 directories in 0.58 s. The absolute ceiling here is
+  // deliberately looser than that measurement: a shared CI runner is slower than
+  // a workstation, and a perf test that goes red on a busy machine teaches people
+  // to ignore red. The ratio between depth 8 and depth 24 is the stable signal,
+  // and that is asserted tightly.
+  const dir = await repo('wide', CLEAN);
+  const mk = [];
+  for (let i = 0; i < 4000; i++) mk.push(mkdir(path.join(dir, `pkg${i % 50}`, `sub${i}`, 'src'), { recursive: true }));
+  await Promise.all(mk);
+  await write(path.join(dir, 'pkg7', 'sub7', '.git', 'config'), '[core]\n\tfsmonitor = /tmp/x.sh\n');
+
+  const { loadRules, scan } = await import('../src/scanners/gitconfig.js');
+  const rules = await loadRules(path.join(ROOT, 'rules', 'git-exec-keys.json'));
+
+  const before = process.memoryUsage().heapUsed;
+  const t0 = Date.now();
+  const deep = await scan(dir, rules, { maxDepth: 24 });
+  const deepMs = Date.now() - t0;
+  const heapMb = (process.memoryUsage().heapUsed - before) / 1024 / 1024;
+
+  const t1 = Date.now();
+  await scan(dir, rules, { maxDepth: 8 });
+  const shallowMs = Math.max(Date.now() - t1, 1);
+
+  assert.ok(deep.findings.some(f => f.ruleId === 'core-fsmonitor'), 'the hidden repository must still be found');
+  assert.ok(deep.dirsVisited > 4000, `expected a wide walk, visited ${deep.dirsVisited}`);
+  assert.ok(deepMs < 10_000, `scan of ${deep.dirsVisited} directories took ${deepMs}ms`);
+  assert.ok(heapMb < 200, `scan retained ${heapMb.toFixed(0)} MB of heap`);
+  assert.ok(deepMs < shallowMs * 4,
+    `raising the depth from 8 to 24 cost ${deepMs}ms against ${shallowMs}ms - that is a regression, not a deeper walk`);
+});
+
+test.after(async () => { await rm(WORK, { recursive: true, force: true }); });

@@ -47,14 +47,6 @@
     "hx",
     "micro"
   ],
-  "safeCommandPrefixes": [
-    "git-lfs",
-    "git lfs",
-    "git-crypt",
-    "gpg",
-    "git",
-    "npx --no-install prettier"
-  ],
   "rules": [
     {
       "id": "core-fsmonitor",
@@ -170,7 +162,7 @@
         "section": "credential",
         "key": "helper"
       },
-      "matchType": "exec-unless-known-helper",
+      "matchType": "credential-helper-graded",
       "severity": "high",
       "title": "credential.helper runs a program that receives your credentials",
       "explanation": "A credential helper is executed by git and is handed the host and username it is asked about. A repository-local helper can both execute code and capture tokens.",
@@ -182,10 +174,10 @@
         "section": "alias",
         "anyKey": true
       },
-      "matchType": "shell-alias",
+      "matchType": "alias-executes",
       "severity": "high",
-      "title": "Git alias executes a shell command",
-      "explanation": "An alias value starting with ! is run through the shell. Aliases defined inside a repository run as soon as someone uses that alias name.",
+      "title": "Git alias runs a command or reconfigures git",
+      "explanation": "An alias value starting with ! is run through the shell. An alias that starts with a git option such as -c or --exec-path does not need the shell at all: it re-enters git with a configuration of its own choosing, and that configuration can name a program to run.",
       "remediation": "Read the command. Aliases that shell out do not belong in a repository-local config."
     },
     {
@@ -198,7 +190,7 @@
           "process"
         ]
       },
-      "matchType": "exec-unless-known-command",
+      "matchType": "exec-command-graded",
       "severity": "high",
       "title": "Filter driver runs a command on checkout or commit",
       "explanation": "Filter drivers referenced from .gitattributes run automatically whenever matching files are checked out or staged. git-lfs uses this legitimately; anything else deserves a look.",
@@ -212,7 +204,7 @@
           "textconv"
         ]
       },
-      "matchType": "exec-unless-known-command",
+      "matchType": "exec-command-graded",
       "severity": "high",
       "title": "diff textconv runs a command to render a file as text",
       "explanation": "Referenced from .gitattributes and executed whenever git diffs a matching file.",
@@ -226,7 +218,7 @@
           "driver"
         ]
       },
-      "matchType": "exec-unless-known-command",
+      "matchType": "exec-command-graded",
       "severity": "high",
       "title": "Custom merge driver runs a command during a merge",
       "explanation": "Executed by git when merging files that .gitattributes assigns to this driver.",
@@ -235,7 +227,7 @@
     {
       "id": "tool-cmd",
       "match": {
-        "sectionPrefix": "mergetool|difftool",
+        "sectionPrefix": "mergetool|difftool|browser|guitool|man",
         "keys": [
           "cmd",
           "path"
@@ -243,8 +235,8 @@
       },
       "matchType": "exec-always",
       "severity": "medium",
-      "title": "Merge/diff tool command defined in the repository",
-      "explanation": "Runs when someone starts git mergetool or git difftool.",
+      "title": "Tool command defined in the repository",
+      "explanation": "Git runs this command when the matching tool is invoked: git mergetool, git difftool, git web--browse, git gui or git help -w. A repository-local definition means the repository chooses the program.",
       "remediation": "Read the command before using those subcommands."
     },
     {
@@ -287,6 +279,98 @@
       "title": "Remote URL uses a transport that executes a command",
       "explanation": "A URL beginning with ext:: passes the rest of the line to a shell as the transport helper. Fetching, cloning or initialising a submodule with such a URL runs that command.",
       "remediation": "Do not fetch this remote or initialise this submodule. Read the URL first."
+    },
+    {
+      "id": "pager-subcommand",
+      "match": {
+        "section": "pager",
+        "anyKey": true
+      },
+      "matchType": "exec-unless-safe-pager",
+      "severity": "high",
+      "title": "pager.<command> runs a program for one git subcommand",
+      "explanation": "Git runs this program instead of the default pager whenever that subcommand produces paged output. It is core.pager with a narrower trigger, and it is just as executable.",
+      "remediation": "Set it to a known pager or remove it."
+    },
+    {
+      "id": "gpg-program",
+      "match": {
+        "sectionPrefix": "gpg",
+        "keys": [
+          "program"
+        ]
+      },
+      "matchType": "exec-unless-safe-gpg",
+      "severity": "high",
+      "title": "gpg.program runs a program during signing and verification",
+      "explanation": "Git invokes this binary when signing a commit or tag and when verifying one with --show-signature.",
+      "remediation": "Set it to gpg, gpg2 or gpgsm, or remove it."
+    },
+    {
+      "id": "remote-packcmd",
+      "match": {
+        "sectionPrefix": "remote",
+        "keys": [
+          "uploadpack",
+          "receivepack"
+        ]
+      },
+      "matchType": "exec-unless-safe-pack",
+      "severity": "high",
+      "title": "remote.<name>.uploadPack / receivePack runs a program on fetch or push",
+      "explanation": "Git executes this command on the serving side of a fetch or push. With a local path as the remote URL, that side is your own machine.",
+      "remediation": "Remove the key unless you deliberately point at a non-standard git-upload-pack."
+    },
+    {
+      "id": "core-askpass",
+      "match": {
+        "section": "core",
+        "key": "askpass"
+      },
+      "matchType": "exec-always",
+      "severity": "high",
+      "title": "core.askPass runs a program whenever git needs a credential",
+      "explanation": "Any operation that prompts for a password or passphrase runs this program instead of prompting.",
+      "remediation": "Remove the key. An askpass helper belongs in your own global config, not in a repository."
+    },
+    {
+      "id": "core-alternaterefs",
+      "match": {
+        "section": "core",
+        "key": "alternaterefscommand"
+      },
+      "matchType": "exec-always",
+      "severity": "high",
+      "title": "core.alternateRefsCommand runs a program when refs from an alternate are advertised",
+      "explanation": "Git executes this command in place of its own ref advertisement for alternates.",
+      "remediation": "Remove the key."
+    },
+    {
+      "id": "trailer-command",
+      "match": {
+        "sectionPrefix": "trailer",
+        "keys": [
+          "command",
+          "cmd"
+        ]
+      },
+      "matchType": "exec-always",
+      "severity": "high",
+      "title": "trailer.<token>.command runs a program when a trailer is added",
+      "explanation": "Git runs this command during git commit and git interpret-trailers to produce the trailer value.",
+      "remediation": "Read the command. A trailer helper shipped inside a repository is unusual."
+    },
+    {
+      "id": "init-templatedir",
+      "match": {
+        "section": "init",
+        "key": "templatedir"
+      },
+      "matchType": "always-flag",
+      "severity": "medium",
+      "title": "init.templateDir seeds new repositories from a directory",
+      "explanation": "Every repository created or cloned while this setting applies copies its hooks and config from that directory. It turns one hostile directory into hooks in every repository you make next.",
+      "remediation": "Inspect the template directory before running git init or git clone here."
     }
   ],
   "structural": [
@@ -294,15 +378,19 @@
       "id": "bare-repo-in-tree",
       "severity": "critical",
       "title": "Bare git repository found inside the project tree",
-      "explanation": "Git discovers bare repositories while walking directories and applies their configuration, including keys that execute commands. This is the exact mechanism of CVE-2026-45033 (GitHub Copilot CLI, CVSS 8.5). A bare repository that ships inside a project is almost never legitimate.",
-      "remediation": "Do not open this project with a coding agent until you have inspected the directory. Setting safe.bareRepository=explicit in your global git config stops git from picking up bare repositories automatically."
+      "explanation": "Git discovers bare repositories while walking directories and applies their configuration, including keys that execute commands. This is the exact mechanism of CVE-2026-45033 (GitHub Copilot CLI, CVSS 8.5). A bare repository that ships inside a project is almost never legitimate. Reported as medium on its own; it becomes critical as soon as that same git directory carries a setting git can execute.",
+      "remediation": "Do not open this project with a coding agent until you have inspected the directory. Setting safe.bareRepository=explicit in your global git config stops git from picking up bare repositories automatically.",
+      "baseSeverity": "medium",
+      "escalatedSeverity": "critical"
     },
     {
       "id": "nested-git-dir",
       "severity": "high",
       "title": "Nested .git directory below the project root",
-      "explanation": "A .git directory that is not the project's own repository arrived as content, for example through a zip file, a shared drive or a sync folder. Its config is read by git and by coding agents that gather context from it. Submodules are the legitimate exception.",
-      "remediation": "Check whether this is a registered submodule (.gitmodules). If it is not, treat it as untrusted and inspect its config."
+      "explanation": "A .git directory that is not the project's own repository arrived as content, for example through a zip file, a shared drive or a sync folder. Its config is read by git and by coding agents that gather context from it. Submodules are the legitimate exception. Reported as medium on its own; it becomes critical as soon as that same git directory carries a setting git can execute.",
+      "remediation": "Check whether this is a registered submodule (.gitmodules). If it is not, treat it as untrusted and inspect its config.",
+      "baseSeverity": "medium",
+      "escalatedSeverity": "critical"
     },
     {
       "id": "active-hook",
@@ -345,6 +433,34 @@
       "title": "Hook script runs something from a temporary or hidden location",
       "explanation": "core.hooksPath points at a conventionally named directory (.husky, .githooks), which is normal, but one of its scripts references a temporary or hidden path. Build hooks run project tooling from the project; they have no reason to reach into /tmp, /var/tmp or a hidden cache directory.",
       "remediation": "Read the script before running any git command in this repository."
+    },
+    {
+      "id": "symlinked-config",
+      "severity": "high",
+      "title": "Git config reached through a symlink was refused",
+      "explanation": "A config file inside this tree is a symbolic link. GuardSkill does not read config through a link: a delivered directory could otherwise point the scanner at any file you can read and have its contents printed in the report. The file was not inspected, so whatever it configures is unknown.",
+      "remediation": "Look at where the link points before you run git in this directory."
+    },
+    {
+      "id": "include-not-followed",
+      "severity": "high",
+      "title": "Included config could not be inspected",
+      "explanation": "This config includes another file that lies outside the scanned tree or could not be read. Git applies an include as if its contents were written here, so the settings that apply are not fully known.",
+      "remediation": "Open the included file and check it against the same list, or rescan from a directory that contains it."
+    },
+    {
+      "id": "hook-symlink-outside",
+      "severity": "critical",
+      "title": "Hook script is a symlink pointing outside the tree",
+      "explanation": "Git runs a hook whether it is a regular file or a link. This one points outside the scanned tree, so its content was deliberately not read and is unknown.",
+      "remediation": "Do not run git commands here until you have looked at the link target."
+    },
+    {
+      "id": "case-variant-git-dir",
+      "severity": "medium",
+      "title": "Directory named like .git but in a different case",
+      "explanation": "On this file system that name is not a git directory, so git here ignores it. On Windows and macOS, where file names are usually case-insensitive, git does treat it as one and applies its configuration. If this tree was delivered to you or is shared with others, it is live there.",
+      "remediation": "Inspect the directory. A .GIT that is not the project's own repository has no legitimate reason to exist."
     }
   ],
   "knownHooksDirs": [
@@ -367,7 +483,13 @@
     "\\bnc\\s+-[a-z]*e",
     "eval\\s+\\$\\(",
     "(?:curl|wget)\\s+[^\\n]*(?:-o|--output)\\s",
-    "python[0-9.]*\\s+-c\\s"
+    "python[0-9.]*\\s+-c\\s",
+    "(?:iwr|invoke-webrequest|curl)\\s[^\\n|]*\\|\\s*(?:iex|invoke-expression)",
+    "invoke-expression",
+    "-enc(?:odedcommand)?\\s+[A-Za-z0-9+/=]{20,}",
+    "certutil\\s+[^\\n]*-urlcache",
+    "\\bbitsadmin\\s+/transfer",
+    "\\bmshta\\s+https?:"
   ],
   "suspiciousPathIndicators": [
     "(^|[\\s\"'=(])/tmp/",
@@ -378,5 +500,47 @@
     "%TEMP%",
     "AppData\\\\+Local\\\\+Temp",
     "(^|[\\s\"'=(])~/\\.[A-Za-z0-9_-]+/"
+  ],
+  "safeCommandValues": [
+    "git-lfs clean -- %f",
+    "git-lfs smudge -- %f",
+    "git-lfs filter-process",
+    "git-lfs clean %f",
+    "git-lfs smudge %f",
+    "git-lfs filter-process --skip",
+    "git-crypt clean",
+    "git-crypt smudge",
+    "git-crypt diff"
+  ],
+  "gitReconfigureFlags": [
+    "-c",
+    "--config-env",
+    "--exec-path",
+    "-p",
+    "--paginate",
+    "-C"
+  ],
+  "safeGpgPrograms": [
+    "gpg",
+    "gpg2",
+    "gpgsm",
+    "ssh-keygen",
+    "gpgconf"
+  ],
+  "knownCredentialHelpers": [
+    "store",
+    "cache",
+    "osxkeychain",
+    "manager",
+    "manager-core",
+    "wincred",
+    "libsecret",
+    "gnome-keyring"
+  ],
+  "credentialHelperRedirectFlags": [
+    "--file",
+    "-f",
+    "--timeout",
+    "--socket"
   ]
 }

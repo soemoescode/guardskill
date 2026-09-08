@@ -25,9 +25,11 @@ export function parseGitConfig(text) {
       line = remainder;
     }
 
-    // join backslash continuations
+    // Join backslash continuations the way git does: the next line is appended
+    // verbatim, leading whitespace included. Trimming it here produced a value
+    // git never sees (found by the golden table).
     while (line.endsWith('\\') && i + 1 < lines.length) {
-      line = line.slice(0, -1) + lines[++i].trim();
+      line = line.slice(0, -1) + lines[++i].replace(/\s+$/, '');
     }
 
     const kv = line.match(/^([A-Za-z][A-Za-z0-9-]*)\s*(?:=\s*(.*))?$/);
@@ -43,6 +45,11 @@ export function parseGitConfig(text) {
     }
     if (value.length > 1 && value.startsWith('"') && value.endsWith('"')) {
       value = value.slice(1, -1).replace(/\\(.)/g, '$1');
+    } else {
+      // Outside quotes git records a tab as a plain space (verified against
+      // git 2.43 in the golden table). Keeping the tab produced a value git
+      // never reads.
+      value = value.replace(/\t/g, ' ');
     }
 
     entries.push({ section, subsection, key, value, line: lineNumber });

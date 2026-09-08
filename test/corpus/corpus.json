@@ -1,0 +1,103 @@
+{
+ "git-lfs-shaped": {
+  "description": "A project that checks bare repositories into its own test data and uses git-lfs. Shape taken from git-lfs/git-lfs.",
+  "expect": {
+   "critical": 0,
+   "high": 0,
+   "notes": "8 medium bare-repo-in-tree findings: unusual, but their configs hold nothing git executes."
+  },
+  "files": {
+   ".git/config": "[core]\n\trepositoryformatversion = 0\n[filter \"lfs\"]\n\tclean = git-lfs clean -- %f\n\tsmudge = git-lfs smudge -- %f\n\tprocess = git-lfs filter-process\n\trequired = true\n",
+   ".gitattributes": "*.bin filter=lfs diff=lfs merge=lfs -text\n",
+   "README.md": "# reduced fixture\n",
+   "git/githistory/fixtures/repo1.git/HEAD": "ref: refs/heads/main\n",
+   "git/githistory/fixtures/repo1.git/config": "[core]\n\trepositoryformatversion = 0\n\tbare = true\n",
+   "git/githistory/fixtures/repo1.git/objects/.keep": "",
+   "git/githistory/fixtures/repo1.git/refs/.keep": "",
+   "git/githistory/fixtures/repo2.git/HEAD": "ref: refs/heads/main\n",
+   "git/githistory/fixtures/repo2.git/config": "[core]\n\trepositoryformatversion = 0\n\tbare = true\n",
+   "git/githistory/fixtures/repo2.git/objects/.keep": "",
+   "git/githistory/fixtures/repo2.git/refs/.keep": "",
+   "git/githistory/fixtures/repo3.git/HEAD": "ref: refs/heads/main\n",
+   "git/githistory/fixtures/repo3.git/config": "[core]\n\trepositoryformatversion = 0\n\tbare = true\n",
+   "git/githistory/fixtures/repo3.git/objects/.keep": "",
+   "git/githistory/fixtures/repo3.git/refs/.keep": "",
+   "git/githistory/fixtures/repo4.git/HEAD": "ref: refs/heads/main\n",
+   "git/githistory/fixtures/repo4.git/config": "[core]\n\trepositoryformatversion = 0\n\tbare = true\n",
+   "git/githistory/fixtures/repo4.git/objects/.keep": "",
+   "git/githistory/fixtures/repo4.git/refs/.keep": "",
+   "git/githistory/fixtures/repo5.git/HEAD": "ref: refs/heads/main\n",
+   "git/githistory/fixtures/repo5.git/config": "[core]\n\trepositoryformatversion = 0\n\tbare = true\n",
+   "git/githistory/fixtures/repo5.git/objects/.keep": "",
+   "git/githistory/fixtures/repo5.git/refs/.keep": "",
+   "git/githistory/fixtures/repo6.git/HEAD": "ref: refs/heads/main\n",
+   "git/githistory/fixtures/repo6.git/config": "[core]\n\trepositoryformatversion = 0\n\tbare = true\n",
+   "git/githistory/fixtures/repo6.git/objects/.keep": "",
+   "git/githistory/fixtures/repo6.git/refs/.keep": "",
+   "git/githistory/fixtures/repo7.git/HEAD": "ref: refs/heads/main\n",
+   "git/githistory/fixtures/repo7.git/config": "[core]\n\trepositoryformatversion = 0\n\tbare = true\n",
+   "git/githistory/fixtures/repo7.git/objects/.keep": "",
+   "git/githistory/fixtures/repo7.git/refs/.keep": "",
+   "git/githistory/fixtures/repo8.git/HEAD": "ref: refs/heads/main\n",
+   "git/githistory/fixtures/repo8.git/config": "[core]\n\trepositoryformatversion = 0\n\tbare = true\n",
+   "git/githistory/fixtures/repo8.git/objects/.keep": "",
+   "git/githistory/fixtures/repo8.git/refs/.keep": ""
+  }
+ },
+ "husky-project": {
+  "description": "An ordinary Node project using husky for hooks.",
+  "expect": {
+   "critical": 0,
+   "high": 0,
+   "notes": "informational only: the managed hooks directory, with the scripts it runs listed."
+  },
+  "files": {
+   ".git/config": "[core]\n\trepositoryformatversion = 0\n\thooksPath = .husky\n[remote \"origin\"]\n\turl = https://github.com/example/app.git\n",
+   ".husky/_/husky.sh": "#!/usr/bin/env sh\n# husky bootstrap\n",
+   ".husky/pre-commit": "#!/usr/bin/env sh\nnpx lint-staged\n",
+   ".husky/commit-msg": "#!/usr/bin/env sh\nnpx commitlint --edit \"$1\"\n",
+   "package.json": "{ \"name\": \"app\", \"devDependencies\": { \"husky\": \"^9.0.0\" } }\n"
+  }
+ },
+ "monorepo-submodules": {
+  "description": "A monorepo with registered submodules, one of which registers submodules of its own.",
+  "expect": {
+   "critical": 0,
+   "high": 0,
+   "notes": "registered submodules must not be reported as nested repositories."
+  },
+  "files": {
+   ".git/config": "[core]\n\trepositoryformatversion = 0\n[submodule \"vendor/lib\"]\n\turl = https://example.com/lib.git\n",
+   ".gitmodules": "[submodule \"vendor/lib\"]\n\tpath = vendor/lib\n\turl = https://example.com/lib.git\n",
+   "vendor/lib/.git": "gitdir: ../../.git/modules/vendor/lib\n",
+   ".git/modules/vendor/lib/config": "[core]\n\trepositoryformatversion = 0\n[remote \"origin\"]\n\turl = https://example.com/lib.git\n",
+   ".git/modules/vendor/lib/HEAD": "ref: refs/heads/main\n",
+   "vendor/lib/.gitmodules": "[submodule \"third\"]\n\tpath = third\n\turl = https://example.com/third.git\n",
+   "vendor/lib/third/.git/config": "[core]\n\trepositoryformatversion = 0\n"
+  }
+ },
+ "data-science": {
+  "description": "A notebook repository using nbstripout and sops filters, the pattern that produced seven false highs in review 01.",
+  "expect": {
+   "critical": 0,
+   "high": 0,
+   "notes": "PATH-resolved filter commands are informational, not a risk."
+  },
+  "files": {
+   ".git/config": "[core]\n\trepositoryformatversion = 0\n[filter \"nbstripout\"]\n\tclean = jupyter nbconvert --clear-output --stdin --stdout\n\tsmudge = cat\n\trequired = true\n[diff \"ipynb\"]\n\ttextconv = jupyter nbconvert --to script --stdout\n[filter \"sops\"]\n\tclean = sops --encrypt /dev/stdin\n\tsmudge = sops --decrypt /dev/stdin\n[filter \"nop\"]\n\tclean = cat\n\tsmudge = cat\n",
+   ".gitattributes": "*.ipynb filter=nbstripout diff=ipynb\nsecrets.yaml filter=sops\n"
+  }
+ },
+ "dotfiles-include": {
+  "description": "A dotfiles repository that splits its config across an included file inside the tree.",
+  "expect": {
+   "critical": 0,
+   "high": 0,
+   "notes": "the include is followed and the included file holds nothing executable."
+  },
+  "files": {
+   ".git/config": "[core]\n\trepositoryformatversion = 0\n[include]\n\tpath = ../shared/identity.gitconfig\n",
+   "shared/identity.gitconfig": "[user]\n\tname = Example\n\temail = example@example.org\n[color]\n\tui = auto\n"
+  }
+ }
+}

@@ -1,11 +1,11 @@
 ---
 name: guardskill
-description: Scan a project for git settings and hook scripts that make a coding agent execute code when it opens the folder (the GitSpawn class and CVE-2026-45033). Use before opening an unfamiliar, downloaded, forked or client-supplied repository, after merging an outside contribution, and periodically on active projects.
+description: Scan a project for git settings and hook scripts that make a coding agent execute code when it opens the folder (the GitSpawn research and CVE-2026-45033). Use before opening an unfamiliar, downloaded, forked or client-supplied repository, after merging an outside contribution, and periodically on active projects.
 ---
 
 # GuardSkill
 
-A read-only scanner. It reads git configuration and hook scripts, reports what it finds, and changes nothing.
+A read-only scanner. It reads git configuration and hook scripts, reports what it finds, and changes nothing in the project it inspects.
 
 ## When to use it
 
@@ -20,19 +20,26 @@ npx guardskill <path>          # human-readable
 npx guardskill <path> --json   # to parse the result
 ```
 
-Exit code 0 means nothing at or above the threshold; 1 means findings; 2 means the scan failed.
+## Reading the result
 
-## Reading a finding
+The exit code is the summary:
 
-Each finding carries a severity, the exact file and line, the reason the setting matters, the value that was found, and what to do about it.
+| Code | Status | What it means for you |
+|---|---|---|
+| 0 | CLEAN | Nothing at or above the threshold, and the whole tree was inspected |
+| 1 | FINDINGS | Something was found — read it before running git here |
+| 2 | ERROR | The scan did not run. Do not treat this as clean |
+| 3 | INCOMPLETE | Part of the tree was not inspected. Also not clean |
 
-- **critical** — a setting or structure that runs a command during ordinary git operations, or a hook that downloads code. Do not open the project with an agent before looking.
-- **high** — a setting that runs a command in a narrower situation (ssh, merge, diff tooling).
-- **medium** — configuration that can introduce such a setting later, or an unusual editor or pager.
-- **low** — informational. Recognised hook managers such as husky land here.
+Each finding carries a severity, the exact file and line, why the setting matters, the value that was found, and what to do.
 
-A finding is a signal to investigate, not proof of malice. Some patterns are legitimate: a shared `include` you wrote yourself, a monorepo with a custom hooks directory. Read the evidence line before removing anything.
+- **critical** — runs a command during ordinary git operations, or a hook that downloads code, or a git directory shipped as content that also carries an execution key. Do not open the project with an agent before looking.
+- **high** — runs a command in a narrower situation (ssh, merge, diff tooling), or something that could not be inspected and therefore cannot be cleared.
+- **medium** — configuration that can introduce such a setting later, or a structure that is unusual but carries nothing executable.
+- **low** — informational. Recognised hook managers and followed includes land here.
+
+A finding is a signal to investigate, not proof of malice. Some patterns are legitimate: a shared `include` you wrote yourself, a monorepo with a custom hooks directory, a project that checks bare repositories in as test data. Read the evidence line before removing anything.
 
 ## Limits
 
-This covers git-level execution vectors only. It does not check npm dependencies, agent settings files, or MCP server definitions.
+This covers git-level execution vectors. Four executing keys are deliberately out of scope, listed with reasons in `rules/git-exec-keys-inventory.md`. It does not check npm dependencies, agent settings files, or MCP server definitions.

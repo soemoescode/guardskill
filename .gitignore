@@ -6,3 +6,7 @@ test/fixtures/.adversarial/
 test/fixtures/.robustness/
 *.log
 guardskill-report.md
+test/fixtures/.corpus/
+test/fixtures/.contract/
+test/fixtures/.review01/
+test-output.txt

@@ -144,8 +144,11 @@ test('a hostile value cannot rewrite the report it appears in', async () => {
   const r = await scan(dir, rules);
   const finding = r.findings.find(f => f.ruleId === 'core-fsmonitor');
   assert.ok(finding, 'finding missing');
-  assert.ok(!finding.evidence.includes(esc), 'escape sequence survived into the finding');
 
+  // Since v0.4.0 the finding keeps the raw value and the *output channels* are
+  // what sanitise it (review 01, F-11): a consumer of the library may want the
+  // bytes git actually reads. What must never carry an escape is anything that
+  // reaches a terminal or a report file.
   const text = formatText(r, { color: false });
   assert.ok(!text.includes(esc), 'escape sequence survived into the terminal report');
 

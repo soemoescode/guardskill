@@ -97,7 +97,7 @@ test('git-lfs and git-crypt filters are never flagged', async () => {
   }
 });
 
-test('the scanner never follows symlinks out of the target', async () => {
+test('the scanner never follows symlinks out of the target', async t => {
   const { discoverGitTargets } = await import('../src/discovery.js');
   const { symlink, mkdir, writeFile, rm, lstat } = await import('node:fs/promises');
   const tmp = path.join(__dirname, 'fixtures', '.symlink-case');
@@ -114,10 +114,14 @@ test('the scanner never follows symlinks out of the target', async () => {
   const link = path.join(tmp, 'link');
   try {
     await symlink(path.join(VULN, 'bare-repo-in-tree'), link, 'dir');
-  } catch {
-    return; // no symlink support (unprivileged Windows); nothing to assert here
+  } catch (err) {
+    // Never a silent pass: a run that could not create a symlink says so, so the
+    // CI output shows on which platform this guarantee went untested (F-16).
+    return t.skip(`platform cannot create a symlink (${err.code}) - this guarantee is UNTESTED here`);
   }
-  if (!(await lstat(link)).isSymbolicLink()) return; // materialised as a real directory
+  if (!(await lstat(link)).isSymbolicLink()) {
+    return t.skip('the file system materialised the symlink as a real directory - this guarantee is UNTESTED here');
+  }
 
   const { targets } = await discoverGitTargets(tmp);
   assert.ok(!targets.some(t => t.relPath.startsWith('link')), 'scanner followed a symlink');
