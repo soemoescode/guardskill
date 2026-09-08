@@ -1,8 +1,8 @@
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { parseGitConfig } from '../gitconfig-parser.js';
-import { discoverGitTargets } from '../discovery.js';
+import { discoverGitTargets, configFilesFor } from '../discovery.js';
 
 export async function loadRules(rulesPath) {
   return JSON.parse(await readFile(rulesPath, 'utf-8'));
@@ -10,6 +10,16 @@ export async function loadRules(rulesPath) {
 
 const SHELL_META = /[;&|`$(){}<>]|\|\||&&/;
 const HEAD_BYTES = 4096;
+const MAX_CONFIG_BYTES = 4 * 1024 * 1024;
+const MAX_EVIDENCE_CHARS = 200;
+
+// Values come from a file an attacker controls. Anything that reaches a terminal
+// or a Markdown report gets its control characters removed and its length capped,
+// so a hostile config cannot rewrite the report it appears in.
+function sanitise(text) {
+  const clean = String(text).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '\uFFFD').replace(/[\r\n]+/g, ' ');
+  return clean.length > MAX_EVIDENCE_CHARS ? clean.slice(0, MAX_EVIDENCE_CHARS) + '\u2026 [truncated]' : clean;
+}
 
 async function readHead(file) {
   try {
@@ -28,6 +38,14 @@ function firstWord(value) {
 
 function baseName(cmd) {
   return path.basename(cmd.replace(/\\/g, '/')).toLowerCase();
+}
+
+// An allowlisted name only means "safe" when it is a bare command resolved from
+// PATH. `/tmp/less` is not less; naming your payload after a familiar tool is the
+// cheapest evasion there is.
+function isBareCommand(value) {
+  const first = firstWord(value);
+  return first !== '' && !/[\/\\]/.test(first);
 }
 
 function looksExecutable(value) {
@@ -73,15 +91,22 @@ function evaluate(rule, entry, cfg) {
     case 'exec-unless-safe-pager':
       if (cfg.safeLiterals.includes(lower)) return false;
       if (SHELL_META.test(value)) return true;
+      if (!isBareCommand(value)) return true;
       return !cfg.safePagers.includes(baseName(firstWord(value)));
     case 'exec-unless-safe-editor':
       if (cfg.safeLiterals.includes(lower)) return false;
       if (SHELL_META.test(value)) return true;
+      if (!isBareCommand(value)) return true;
       return !cfg.safeEditors.includes(baseName(firstWord(value)).replace(/\.(exe|cmd|bat)$/, ''));
     case 'exec-unless-known-command':
       if (cfg.safeLiterals.includes(lower)) return false;
       if (SHELL_META.test(value)) return true;
+      if (!isBareCommand(value)) return true;
       return !startsWithSafePrefix(value, cfg.safeCommandPrefixes);
+    case 'protocol-allow':
+      return ['always', 'user'].includes(lower);
+    case 'command-url':
+      return /^\s*ext::/i.test(value);
     case 'exec-unless-known-helper': {
       const known = ['store', 'cache', 'osxkeychain', 'manager', 'manager-core', 'wincred', 'libsecret', 'gnome-keyring'];
       if (!value.trim()) return false;
@@ -102,21 +127,48 @@ function keyLabel(entry) {
 }
 
 async function inspectHooksDir(dir, ruleset) {
-  // returns { suspicious: boolean, script: string|null }
+  // Classify every script in the directory. A conventional directory name is not
+  // evidence of anything: the scripts are.
   let entries;
-  try { entries = await readdir(dir, { withFileTypes: true }); } catch { return { suspicious: false, script: null }; }
+  try { entries = await readdir(dir, { withFileTypes: true }); } catch { return { verdict: 'empty', script: null }; }
+  const scripts = [];
+  let suspicious = null;
   for (const e of entries) {
     if (!e.isFile() || e.name.endsWith('.sample')) continue;
+    scripts.push(e.name);
     const head = await readHead(path.join(dir, e.name));
-    if (matchesAny(head, ruleset.remoteExecIndicators)) return { suspicious: true, script: e.name };
+    if (matchesAny(head, ruleset.remoteExecIndicators)) return { verdict: 'remote-exec', script: e.name, scripts };
+    if (!suspicious && matchesAny(head, ruleset.suspiciousPathIndicators)) suspicious = e.name;
   }
-  return { suspicious: false, script: null };
+  if (suspicious) return { verdict: 'suspicious-path', script: suspicious, scripts };
+  return { verdict: scripts.length ? 'managed' : 'empty', script: null, scripts };
 }
 
-async function scanConfigFile(target, ruleset, repoRoot) {
+async function scanAllConfigs(target, ruleset, repoRoot, rootPath) {
+  const findings = [];
+  for (const file of await configFilesFor(target.gitDir)) {
+    const rel = (path.relative(rootPath, file) || file).split(path.sep).join('/');
+    findings.push(...await scanConfigFile({ ...target, configPath: file, relPath: rel.replace(/\/(config(\.worktree)?)$/, '') }, ruleset, repoRoot, rel));
+  }
+  return findings;
+}
+
+async function scanConfigFile(target, ruleset, repoRoot, displayPath) {
   const findings = [];
   let text;
   try {
+    const stats = await stat(target.configPath);
+    if (!stats.isFile()) return findings;
+    if (stats.size > MAX_CONFIG_BYTES) {
+      findings.push({
+        ruleId: 'config-too-large', severity: 'medium',
+        title: 'Git config file too large to parse',
+        explanation: `This config is ${Math.round(stats.size / 1024 / 1024)} MB. GuardSkill refuses to parse a file that size, so it was not inspected. A config that large is itself unusual.`,
+        remediation: 'Open the file and look at it yourself before running git here.',
+        location: displayPath, evidence: `${stats.size} bytes`,
+      });
+      return findings;
+    }
     text = await readFile(target.configPath, 'utf-8');
   } catch {
     return findings;
@@ -132,20 +184,26 @@ async function scanConfigFile(target, ruleset, repoRoot) {
         const known = ruleset.knownHooksDirs.includes(raw);
         const exists = existsSync(dir);
         if (known && exists) {
-          const { suspicious, script } = await inspectHooksDir(dir, ruleset);
-          const sr = ruleset.structural.find(r => r.id === (suspicious ? 'hook-fetches-remote-code' : 'managed-hooks-dir'));
+          const { verdict, script, scripts } = await inspectHooksDir(dir, ruleset);
+          const id = verdict === 'remote-exec' ? 'hook-fetches-remote-code'
+                   : verdict === 'suspicious-path' ? 'unknown-hook-in-managed-dir'
+                   : 'managed-hooks-dir';
+          const sr = ruleset.structural.find(r => r.id === id);
+          const atScript = verdict === 'remote-exec' || verdict === 'suspicious-path';
           findings.push({
             ruleId: sr.id, severity: sr.severity, title: sr.title,
             explanation: sr.explanation, remediation: sr.remediation,
-            location: suspicious ? `${raw}/${script}` : `${target.relPath}/config:${entry.line}`,
-            evidence: suspicious ? `hook script ${raw}/${script} fetches or decodes code` : `core.hooksPath = ${entry.value}`,
+            location: atScript ? `${raw}/${script}` : `${displayPath}:${entry.line}`,
+            evidence: atScript
+              ? sanitise(`${raw}/${script}`)
+              : sanitise(`core.hooksPath = ${entry.value}` + (scripts.length ? ` (runs: ${scripts.join(', ')})` : '')),
           });
         } else {
           findings.push({
             ruleId: rule.id, severity: rule.severity, title: rule.title,
             explanation: rule.explanation, remediation: rule.remediation,
-            location: `${target.relPath}/config:${entry.line}`,
-            evidence: `${keyLabel(entry)} = ${entry.value}`,
+            location: `${displayPath}:${entry.line}`,
+            evidence: sanitise(`${keyLabel(entry)} = ${entry.value}`),
           });
         }
         break;
@@ -158,8 +216,8 @@ async function scanConfigFile(target, ruleset, repoRoot) {
         title: rule.title,
         explanation: rule.explanation,
         remediation: rule.remediation,
-        location: `${target.relPath}/config:${entry.line}`,
-        evidence: `${keyLabel(entry)} = ${entry.value}`,
+        location: `${displayPath}:${entry.line}`,
+        evidence: sanitise(`${keyLabel(entry)} = ${entry.value}`),
       });
       break; // one finding per config entry
     }
@@ -189,7 +247,7 @@ async function scanHooks(target, ruleset) {
       explanation: rule.explanation,
       remediation: rule.remediation,
       location: `${target.relPath}/hooks/${e.name}`,
-      evidence: `active hook script: ${e.name}`,
+      evidence: sanitise(`active hook script: ${e.name}`),
     });
   }
   return findings;
@@ -210,6 +268,14 @@ export async function scan(rootPath, ruleset, opts = {}) {
       const text = await readFile(gitmodules, 'utf-8');
       for (const e of parseGitConfig(text)) {
         if (e.key === 'path') submodulePaths.add(e.value.replace(/\/+$/, ''));
+        if ((e.key === 'url' || e.key === 'pushurl') && /^\s*ext::/i.test(e.value)) {
+          const r = structural.find(x => x.id === 'submodule-ext-url');
+          findings.push({
+            ruleId: r.id, severity: r.severity, title: r.title,
+            explanation: r.explanation, remediation: r.remediation,
+            location: `.gitmodules:${e.line}`, evidence: sanitise(`${e.section}.${e.subsection ?? ''}.${e.key} = ${e.value}`),
+          });
+        }
       }
     } catch { /* unreadable .gitmodules is not a finding */ }
   }
@@ -220,7 +286,7 @@ export async function scan(rootPath, ruleset, opts = {}) {
       findings.push({
         ruleId: rule.id, severity: rule.severity, title: rule.title,
         explanation: rule.explanation, remediation: rule.remediation,
-        location: target.relPath, evidence: `bare repository at ${target.relPath}`,
+        location: target.relPath, evidence: sanitise(`bare repository at ${target.relPath}`),
       });
     } else if (target.kind === 'nested-git') {
       const parent = path.dirname(target.relPath).replace(/\\/g, '/');
@@ -230,14 +296,22 @@ export async function scan(rootPath, ruleset, opts = {}) {
         findings.push({
           ruleId: rule.id, severity: rule.severity, title: rule.title,
           explanation: rule.explanation, remediation: rule.remediation,
-          location: target.relPath, evidence: `nested git directory at ${target.relPath}`,
+          location: target.relPath, evidence: sanitise(`nested git directory at ${target.relPath}`),
         });
       }
     }
     const repoRoot = target.kind === 'bare-repo' ? target.gitDir : path.dirname(target.gitDir);
-    findings.push(...await scanConfigFile(target, ruleset, repoRoot));
+    findings.push(...await scanAllConfigs(target, ruleset, repoRoot, rootPath));
     findings.push(...await scanHooks(target, ruleset));
   }
+
+  const seen = new Set();
+  const deduped = findings.filter(f => {
+    const key = `${f.ruleId}|${f.location}|${f.evidence}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   return {
     rootPath,
@@ -246,6 +320,6 @@ export async function scan(rootPath, ruleset, opts = {}) {
     targetCount: targets.length,
     dirsVisited,
     truncated,
-    findings,
+    findings: deduped,
   };
 }

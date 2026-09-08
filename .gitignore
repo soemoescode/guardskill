@@ -2,5 +2,7 @@ node_modules/
 test/fixtures/clean/
 test/fixtures/vulnerable/
 test/fixtures/.symlink-case/
+test/fixtures/.adversarial/
+test/fixtures/.robustness/
 *.log
 guardskill-report.md

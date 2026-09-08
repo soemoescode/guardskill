@@ -99,13 +99,29 @@ test('git-lfs and git-crypt filters are never flagged', async () => {
 
 test('the scanner never follows symlinks out of the target', async () => {
   const { discoverGitTargets } = await import('../src/discovery.js');
-  const { symlink, mkdir, writeFile } = await import('node:fs/promises');
+  const { symlink, mkdir, writeFile, rm, lstat } = await import('node:fs/promises');
   const tmp = path.join(__dirname, 'fixtures', '.symlink-case');
+
+  // Start from nothing. A leftover directory from an earlier run - or a filesystem
+  // that materialises a symlink as a real directory, which a Windows share does -
+  // would otherwise fail this test for a reason that has nothing to do with the
+  // scanner. A flaky test in a security suite is worse than no test: it teaches
+  // people to ignore a red run.
+  await rm(tmp, { recursive: true, force: true });
   await mkdir(path.join(tmp, 'inside', '.git'), { recursive: true });
   await writeFile(path.join(tmp, 'inside', '.git', 'config'), '[core]\n', 'utf-8');
-  try { await symlink(path.join(VULN, 'bare-repo-in-tree'), path.join(tmp, 'link'), 'dir'); } catch { /* already there */ }
+
+  const link = path.join(tmp, 'link');
+  try {
+    await symlink(path.join(VULN, 'bare-repo-in-tree'), link, 'dir');
+  } catch {
+    return; // no symlink support (unprivileged Windows); nothing to assert here
+  }
+  if (!(await lstat(link)).isSymbolicLink()) return; // materialised as a real directory
+
   const { targets } = await discoverGitTargets(tmp);
   assert.ok(!targets.some(t => t.relPath.startsWith('link')), 'scanner followed a symlink');
+  await rm(tmp, { recursive: true, force: true });
 });
 
 test('--exclude keeps a directory out of the walk', async () => {

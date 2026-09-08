@@ -258,6 +258,35 @@
       "title": "uploadpack.packObjectsHook runs a command when the repository is fetched from",
       "explanation": "Executed on the serving side of a fetch or clone.",
       "remediation": "Remove the key unless you run this repository as a server and set it yourself."
+    },
+    {
+      "id": "protocol-allow",
+      "match": {
+        "sectionPrefix": "protocol",
+        "keys": [
+          "allow"
+        ]
+      },
+      "matchType": "protocol-allow",
+      "severity": "high",
+      "title": "A git transport protocol is re-enabled for this repository",
+      "explanation": "Git disables the ext:: and other helper transports by default because they let a URL name a command to run. Setting protocol.allow (or protocol.<name>.allow) back to 'always' re-enables that, and a submodule or remote URL is then enough to execute something.",
+      "remediation": "Remove the key. If a project genuinely needs a non-default transport, allow it per command, not in the repository's own config."
+    },
+    {
+      "id": "remote-ext-url",
+      "match": {
+        "sectionPrefix": "remote|submodule",
+        "keys": [
+          "url",
+          "pushurl"
+        ]
+      },
+      "matchType": "command-url",
+      "severity": "critical",
+      "title": "Remote URL uses a transport that executes a command",
+      "explanation": "A URL beginning with ext:: passes the rest of the line to a shell as the transport helper. Fetching, cloning or initialising a submodule with such a URL runs that command.",
+      "remediation": "Do not fetch this remote or initialise this submodule. Read the URL first."
     }
   ],
   "structural": [
@@ -286,8 +315,8 @@
       "id": "managed-hooks-dir",
       "severity": "low",
       "title": "Hooks directory managed by a known hook manager",
-      "explanation": "core.hooksPath points at a conventional, repository-managed hooks directory (husky, lefthook or a .githooks convention). This is normal in many projects. GuardSkill still read the scripts in it and found nothing that fetches or decodes remote code.",
-      "remediation": "No action needed if you expect this project to use managed hooks."
+      "explanation": "core.hooksPath points at a conventional, repository-managed hooks directory (husky, lefthook or the .githooks convention). This is normal in many projects. GuardSkill read the scripts and found nothing that fetches code or reaches into a temporary location — but these scripts do run on ordinary git operations, so the evidence line lists them.",
+      "remediation": "No action needed if you expect this project to use managed hooks. The listed scripts are what will run."
     },
     {
       "id": "managed-hook-script",
@@ -302,6 +331,20 @@
       "title": "Hook script downloads or decodes code before running it",
       "explanation": "A git hook that pipes a download into a shell, decodes base64, or evaluates a command substitution is doing something a build hook has no reason to do. Hooks run automatically on ordinary git operations.",
       "remediation": "Do not run any git command in this repository until you have read the script."
+    },
+    {
+      "id": "submodule-ext-url",
+      "severity": "critical",
+      "title": ".gitmodules declares a submodule whose URL executes a command",
+      "explanation": "A submodule URL beginning with ext:: hands the rest of the line to a shell when the submodule is initialised. Coding agents and IDEs initialise submodules automatically in some configurations.",
+      "remediation": "Do not run git submodule update in this repository until you have read .gitmodules."
+    },
+    {
+      "id": "unknown-hook-in-managed-dir",
+      "severity": "high",
+      "title": "Hook script runs something from a temporary or hidden location",
+      "explanation": "core.hooksPath points at a conventionally named directory (.husky, .githooks), which is normal, but one of its scripts references a temporary or hidden path. Build hooks run project tooling from the project; they have no reason to reach into /tmp, /var/tmp or a hidden cache directory.",
+      "remediation": "Read the script before running any git command in this repository."
     }
   ],
   "knownHooksDirs": [
@@ -325,5 +368,15 @@
     "eval\\s+\\$\\(",
     "(?:curl|wget)\\s+[^\\n]*(?:-o|--output)\\s",
     "python[0-9.]*\\s+-c\\s"
+  ],
+  "suspiciousPathIndicators": [
+    "(^|[\\s\"'=(])/tmp/",
+    "(^|[\\s\"'=(])/var/tmp/",
+    "(^|[\\s\"'=(])/dev/shm/",
+    "/dev/tcp/",
+    "\\.cache/[^\\s\"']*\\.(sh|py|js|bin|exe)",
+    "%TEMP%",
+    "AppData\\\\+Local\\\\+Temp",
+    "(^|[\\s\"'=(])~/\\.[A-Za-z0-9_-]+/"
   ]
 }

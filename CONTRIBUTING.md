@@ -10,6 +10,8 @@ Every new rule needs a fixture on **both** sides: a repository that must trigger
 npm test    # regenerates fixtures, then runs the suite
 ```
 
+Any file in `test/` ending in `.test.js` is picked up automatically — `test/run.js` resolves the list itself rather than relying on a shell glob, which does not exist on Windows.
+
 Fixtures live in `test/fixtures/generate.js` and are generated, not hand-maintained. Add yours there.
 
 Rules live in `rules/git-exec-keys.json`. Each rule needs an `id`, a `match`, a `matchType`, a severity, a plain-language `explanation` of *why the key matters*, and a `remediation` telling the reader what to do. Write the explanation for someone who has never read the git config manual.

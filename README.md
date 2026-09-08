@@ -23,7 +23,7 @@ The recommended user-side mitigation in both write-ups is the same: **inspect th
 
 ## What it checks
 
-GuardSkill walks the tree, finds every git configuration an agent could pick up — the project's own `.git`, any nested `.git` that arrived as content, and any bare repository hidden in a subdirectory — and inspects each one.
+GuardSkill walks the tree and finds every git configuration an agent could pick up: the project's own `.git`, any nested `.git` that arrived as content, any bare repository hidden in a subdirectory, the `.git` *file* a submodule or linked worktree leaves behind, and the configs git keeps beside the main one — `config.worktree` and every `.git/modules/<name>/config`. Each of them is inspected.
 
 | Class | Checks |
 |---|---|
@@ -32,7 +32,8 @@ GuardSkill walks the tree, finds every git configuration an agent could pick up 
 | Shell aliases | any `alias.*` whose value starts with `!` |
 | Configuration loaded from elsewhere | `include.path`, `includeIf.*.path` |
 | Hooks | `core.hooksPath` overrides, active (non-`.sample`) scripts in `.git/hooks`, and hook scripts that pipe a download into a shell or decode base64 before running it |
-| Structure | bare repositories inside the tree (the CVE-2026-45033 vector), nested `.git` directories that are not registered submodules |
+| Transports | `protocol.allow` and `protocol.<name>.allow` set back to `always`, and any remote or submodule URL using the `ext::` transport, which hands the rest of the line to a shell |
+| Structure | bare repositories inside the tree (the CVE-2026-45033 vector), nested `.git` directories that are not registered submodules, `.git` files pointing at a git directory inside the tree |
 
 ## Usage
 
@@ -76,12 +77,16 @@ Nothing was changed - this scan only reads.
 
 ## False positives
 
-A security tool that cries wolf gets uninstalled. The test suite runs against **29 realistic clean repositories** — git-lfs, git-crypt, husky, the `.githooks` convention, registered submodules, credential helpers, custom editors and pagers, signing config — and the build fails if any of them produces a finding above informational level. It also runs against **22 repositories built around a known attack pattern** and fails if any of them is missed, or is caught by the wrong rule.
+A security tool that cries wolf gets uninstalled. The suite runs against **29 realistic clean repositories** — git-lfs, git-crypt, husky, the `.githooks` convention, registered submodules, credential helpers, custom editors and pagers, signing config — and the build fails if any of them produces a finding above informational level. It runs against **22 repositories built around a known attack pattern** and fails if any is missed, or is caught by the wrong rule.
+
+On top of that sits an **evasion suite**: every case in it was found by attacking a version of GuardSkill that already passed its own tests, and it runs on every commit so a future change cannot quietly reopen one. It covers the same key spelled every way git still accepts (case, quoting, line continuations, CRLF, a byte-order mark, a key on the section line), payloads named after familiar tools, hooks directories named `.husky` to look routine, and configs hidden where the first version never looked. A **robustness suite** feeds it binary, empty, truncated and 200,000-line configs, unreadable directories, symlink loops and pointers aimed outside the tree, and requires a report rather than a stack trace.
 
 Two deliberate design choices:
 
 - **Hook managers are recognised, not flagged.** husky, lefthook, pre-commit and a `.githooks` directory are reported as informational (`low`) rather than as a risk — but GuardSkill still reads the scripts, and escalates to `critical` if one of them fetches or decodes code before running it.
 - **`include` / `includeIf` is always reported.** An include can introduce any key on this list later, which is exactly how you would hide one. A shared `~/.gitconfig` you wrote yourself is a normal finding to dismiss.
+- **A hooks directory is judged by its scripts, not its name.** `.husky` running `npm test` is informational, and the finding lists what will run. The same directory running something out of `/tmp` is not.
+- **An incomplete walk never reads as a clean result.** If the traversal stops at its depth or size limit, the report says so instead of printing "no findings".
 
 ## What it does not do
 
