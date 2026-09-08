@@ -3,8 +3,7 @@
 **A repository can make your coding agent run code the moment it opens the folder. GuardSkill checks for that before you do.**
 
 ```bash
-# not yet on npm - clone and run it until the first release is published
-git clone https://github.com/soemoescode/guardskill && node guardskill/bin/guardskill.js .
+npx guardskill .
 ```
 
 Read-only. No network calls, no telemetry, no configuration, no account, no dependencies. It reads git configuration and hook scripts, prints what it found, and exits.
@@ -45,18 +44,23 @@ Four keys are deliberately **out of scope**, each with a reason in the inventory
 
 ## Usage
 
-From a clone, the entry point is `bin/guardskill.js`. Installed from npm, the same
-program is on the path as `guardskill`; `src/` is a library and running it does nothing.
-
 ```bash
-node bin/guardskill.js .                        # scan the current project
-node bin/guardskill.js ~/code/some-project      # scan a specific path
-node bin/guardskill.js . --json                 # machine-readable
-node bin/guardskill.js . --out report.md        # also write a Markdown report
-node bin/guardskill.js . --fail-on critical     # only fail the build on critical findings
-node bin/guardskill.js . --allow-incomplete     # accept a partial walk
-node bin/guardskill.js . --exclude test/fixtures
+npx guardskill .                        # scan the current project
+npx guardskill ~/code/some-project      # scan a specific path
+npx guardskill . --json                 # machine-readable
+npx guardskill . --out report.md        # also write a Markdown report
+npx guardskill . --fail-on critical     # only fail the build on critical findings
+npx guardskill . --allow-incomplete     # accept a partial walk
+npx guardskill . --exclude test/fixtures
 ```
+
+Or install it once: `npm install -g guardskill`, then `guardskill .`.
+
+From a clone the entry point is `node bin/guardskill.js`. `src/` is a library — running
+it does nothing, which is deliberate: the bug that shipped in the first release
+candidate was a CLI that guarded its own execution and lost that guard to npm's bin
+symlink. The published binary is now the only thing that starts a scan, and a
+packaging test drives it on all three platforms.
 
 ### Status and exit code
 
