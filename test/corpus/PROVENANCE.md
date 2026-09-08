@@ -38,7 +38,7 @@ fetch that has not been authorised.
 
 ## What each fixture pins down
 
-- **git-lfs-shaped** — a git directory shipped as content is unusual, not alarming. It becomes critical only when that same config carries something git runs. This is the boundary that `test/review01.test.js` (`F-10a`) and `test/scan.test.js` (bare repo *with* `fsmonitor`) pin from both sides.
+- **git-lfs-shaped** — a git directory shipped as content is unusual, not alarming. It becomes critical only when that same config carries something git runs. This is the boundary that `test/review-01.test.js` (`F-10a`) and `test/scan.test.js` (bare repo *with* `fsmonitor`) pin from both sides.
 - **husky-project** — a hooks directory is judged by its scripts, never by its name.
 - **monorepo-submodules** — `.gitmodules` is read for every repository found, not only the scan root.
 - **data-science** — a filter naming a bare command resolved from PATH is not the same risk as one naming `/tmp/x.sh`.

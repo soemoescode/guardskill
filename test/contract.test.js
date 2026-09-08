@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
-const CLI = path.join(ROOT, 'src', 'cli.js');
+const CLI = path.join(ROOT, 'bin', 'guardskill.js');
 const WORK = path.join(__dirname, 'fixtures', '.contract');
 
 const cli = (args, opts = {}) => new Promise(resolve => {
@@ -125,8 +125,8 @@ test('no source file calls process.exit after writing to stdout', async () => {
   // The static half of the same guarantee: a future edit that reintroduces
   // process.exit() in the CLI would pass every functional test above until the
   // output happens to cross a buffer boundary.
-  const cliSource = await readFile(CLI, 'utf-8');
-  const offending = cliSource.split('\n')
+  const sources = (await Promise.all([CLI, path.join(ROOT, 'src', 'cli.js')].map(f => readFile(f, 'utf-8')))).join('\n');
+  const offending = sources.split('\n')
     .map((line, i) => ({ line: line.trim(), n: i + 1 }))
     .filter(l => /process\.exit\s*\(/.test(l.line) && !l.line.startsWith('//'));
   assert.deepEqual(offending, [],
@@ -174,6 +174,56 @@ test('a wide tree stays within its measured budget', async () => {
   assert.ok(heapMb < 200, `scan retained ${heapMb.toFixed(0)} MB of heap`);
   assert.ok(deepMs < shallowMs * 4,
     `raising the depth from 8 to 24 cost ${deepMs}ms against ${shallowMs}ms - that is a regression, not a deeper walk`);
+});
+
+test('status reports what was found; the exit code reports what was asked (N-4)', async () => {
+  // These two used to be the same value, so a finding below the threshold was
+  // reported as CLEAN: exit 0 is a policy answer ("nothing worth failing on"),
+  // not an observation ("nothing there"). A consumer reading the JSON has to be
+  // able to see the medium finding it chose not to fail on.
+  const medium = await repo('status-medium', '[init]\n\ttemplateDir = ./tpl\n');
+
+  const below = await cli([medium, '--json']);
+  const doc = JSON.parse(below.stdout);
+  assert.equal(below.code, 0, 'a medium finding is below the default threshold, so the exit code is 0');
+  assert.equal(doc.status, 'FINDINGS', 'status must say a finding exists even when the exit code forgives it');
+  assert.ok(doc.findings.length > 0, 'the finding itself must be in the document');
+
+  const above = await cli([medium, '--fail-on', 'medium', '--json']);
+  const raised = JSON.parse(above.stdout);
+  assert.equal(above.code, 1, 'lowering the threshold turns the same scan into a failure');
+  assert.equal(raised.status, 'FINDINGS', 'the status is unchanged: the repository did not change, the policy did');
+  assert.deepEqual(raised.findings.map(f => f.ruleId), doc.findings.map(f => f.ruleId),
+    '--fail-on must not filter the findings out of the report');
+
+  // CLEAN is reserved for zero findings, and nothing else may claim it.
+  const clean = JSON.parse((await cli([await repo('status-clean', CLEAN), '--json'])).stdout);
+  assert.equal(clean.status, 'CLEAN');
+  assert.equal(clean.findings.length, 0);
+});
+
+test('--json answers in JSON when it fails, too', async () => {
+  // A consumer that pipes --json into a parser gets a parse error instead of a
+  // diagnosis if the failure path prints prose. The error document carries the
+  // same required fields, with status ERROR and the reason in `reason`.
+  const missing = path.join(WORK, 'no-such-path');
+  const { code, stdout, stderr } = await cli([missing, '--json']);
+
+  assert.equal(code, 2, 'a missing path is still an ERROR');
+  const doc = JSON.parse(stdout);
+  assert.equal(doc.status, 'ERROR');
+  assert.equal(doc.tool, 'guardskill');
+  assert.equal(doc.schemaVersion, 1);
+  assert.equal(doc.scanned, false);
+  assert.ok(doc.reason && doc.reason.length > 0, 'the error document must say what went wrong');
+  const pkg = JSON.parse(await readFile(path.join(ROOT, 'package.json'), 'utf-8'));
+  assert.equal(doc.version, pkg.version, 'the error document must name the version that produced it');
+  assert.deepEqual(doc.findings, [], 'a failed scan must not imply a clean tree by listing no findings without saying so');
+  for (const field of ['tool', 'version', 'schemaVersion', 'path', 'status', 'scanned', 'reason',
+    'targetCount', 'dirsVisited', 'truncated', 'incompleteReasons', 'summary', 'findings']) {
+    assert.ok(Object.hasOwn(doc, field), `the error document is missing the required field "${field}"`);
+  }
+  assert.match(stderr, /guardskill:/, 'the human-readable reason still goes to stderr');
 });
 
 test.after(async () => { await rm(WORK, { recursive: true, force: true }); });

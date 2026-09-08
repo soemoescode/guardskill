@@ -48,4 +48,4 @@ jobs:
         with:
           node-version: 22.x
       - name: GuardSkill scans its own repository
-        run: node src/cli.js . --fail-on high --no-color --exclude test/fixtures --exclude test/corpus
+        run: node bin/guardskill.js . --fail-on high --no-color --exclude test/fixtures --exclude test/corpus

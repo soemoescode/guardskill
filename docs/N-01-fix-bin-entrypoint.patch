@@ -1,0 +1,25 @@
+diff --git a/src/cli.js b/src/cli.js
+index e6721e8..4b44046 100755
+--- a/src/cli.js
++++ b/src/cli.js
+@@ -2,6 +2,7 @@
+ import path from 'node:path';
+ import { writeFile, readFile, stat } from 'node:fs/promises';
+ import { fileURLToPath, pathToFileURL } from 'node:url';
++import { realpathSync } from 'node:fs';
+ import { loadRules, scan, statusOf } from './scanners/gitconfig.js';
+ import { formatText, formatMarkdown, formatJson } from './report/formatter.js';
+ 
+@@ -110,7 +111,11 @@ async function run() {
+ // Only run when this file *is* the program. Importing it (the contract test does,
+ // to compare the help text against the real default) must not start a scan and
+ // must not touch the importer's exit code.
+-const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
++const invokedDirectly = (() => {
++  if (!process.argv[1]) return false;
++  try { return import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href; }
++  catch { return false; }
++})();
+ if (invokedDirectly) {
+   run()
+     .then(code => { process.exitCode = code; })

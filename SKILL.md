@@ -24,12 +24,14 @@ npx guardskill <path> --json   # to parse the result
 
 The exit code is the summary:
 
-| Code | Status | What it means for you |
-|---|---|---|
-| 0 | CLEAN | Nothing at or above the threshold, and the whole tree was inspected |
-| 1 | FINDINGS | Something was found — read it before running git here |
-| 2 | ERROR | The scan did not run. Do not treat this as clean |
-| 3 | INCOMPLETE | Part of the tree was not inspected. Also not clean |
+| Code | What it means for you |
+|---|---|
+| 0 | Nothing at or above the threshold, and the whole tree was inspected |
+| 1 | Something at or above the threshold was found — read it before running git here |
+| 2 | The scan did not run. Do not treat this as clean |
+| 3 | Part of the tree was not inspected. Also not clean |
+
+The `status` field in `--json` is a separate answer: `CLEAN` only when there were zero findings, `FINDINGS` whenever something was found — including findings below the threshold, which exit 0. If you are reading the JSON rather than the exit code, read `status` and the findings, not the exit code alone.
 
 Each finding carries a severity, the exact file and line, why the setting matters, the value that was found, and what to do.
 

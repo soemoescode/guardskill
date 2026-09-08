@@ -19,20 +19,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const GOLDEN = path.join(__dirname, 'fixtures', 'gitconfig-golden.json');
 
 // case name -> why our value differs from git's, and why that is the safe side.
+// One entry left, and it is a rendering difference rather than a parsing one.
+// Review 02 (N-2) replaced the three-stage value handling with a single pass that
+// carries quote state, and that made the other four declarations disappear: the
+// parser now agrees with git 2.43 on every value in the table, including the
+// sixteen quote-position cases the sweep added.
 const DELIBERATE = {
-  'partial-quote':
-    'git strips the inner quotes and reads `curl x`; we keep them. The rule still fires on the value, ' +
-    'so the finding is identical - only the quoted evidence line differs from what git would execute.',
-  'escape-tab':
-    'git turns \\t into a real tab; we keep the two characters. A literal backslash-t never suppresses ' +
-    'a match that a tab would have produced.',
-  'escape-newline':
-    'Same as escape-tab, for \\n. Keeping it literal cannot hide a shell metacharacter that git would see.',
-  'comment-hash-tight':
-    'git truncates at a # even without preceding whitespace; we keep the rest of the line. Keeping more ' +
-    'of the value can only add characters to match on, never remove them.',
   'implicit-true':
-    'A valueless key is `true` to git and to us; the difference is only in how the golden table spells it.',
+    'A valueless key. `git config --list` prints the key with no value; git treats it as boolean true, ' +
+    'and so do we, because a rule has to evaluate something. The difference is in how the listing renders ' +
+    'it, not in what git reads.',
 };
 
 function ours(configText) {

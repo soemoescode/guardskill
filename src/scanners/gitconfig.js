@@ -1,4 +1,4 @@
-import { readFile, readdir, stat, lstat, realpath } from 'node:fs/promises';
+import { readFile, readdir, stat, lstat, realpath, open } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { parseGitConfig } from '../gitconfig-parser.js';
@@ -100,8 +100,34 @@ function gitReconfigures(value, flags) {
   return words.slice(1).some(w => flags.some(f => w === f || w.startsWith(f + '=')));
 }
 
+/**
+ * Read at most `bytes` from the start of a file, without loading the rest.
+ *
+ * readFile().slice() allocated the whole file first: a 400 MB hook script pushed
+ * peak RSS to 855 MB, and past Node's maximum string length the read threw, the
+ * catch turned that into an empty head, and an empty head is indistinguishable
+ * from "read it, found nothing" - so a padded hook silently dropped from critical
+ * to high. The size of a file in an untrusted directory is the attacker's choice;
+ * the memory we spend on it should not be. (review 02, N-3)
+ *
+ * @returns {{text: string, readable: boolean}}
+ */
+async function readPrefix(file, bytes = HEAD_BYTES) {
+  let handle;
+  try {
+    handle = await open(file, 'r');
+    const buf = Buffer.alloc(bytes);
+    const { bytesRead } = await handle.read(buf, 0, bytes, 0);
+    return { text: buf.subarray(0, bytesRead).toString('utf-8'), readable: true };
+  } catch {
+    return { text: '', readable: false };
+  } finally {
+    await handle?.close().catch(() => {});
+  }
+}
+
 async function readHead(file) {
-  try { return (await readFile(file, 'utf-8')).slice(0, HEAD_BYTES); } catch { return ''; }
+  return (await readPrefix(file)).text;
 }
 
 // ---------------------------------------------------------------- rule matching
@@ -258,6 +284,21 @@ function structuralFinding(ruleset, id, location, evidence, severityOverride) {
   };
 }
 
+/**
+ * A config that exists but cannot be opened. Reported rather than skipped: an
+ * unread file is the one thing a scanner must never present as an absence of
+ * findings, and the scan is INCOMPLETE for the same reason. (review 02, N-3)
+ */
+function unreadableConfigFinding(displayPath, reason) {
+  return {
+    ruleId: 'config-unreadable', severity: 'medium',
+    title: 'Git config found but could not be read',
+    explanation: 'This configuration file exists and git would apply it, but GuardSkill could not open it. Nothing in it has been checked, so this scan says nothing about its contents.',
+    remediation: 'Open the file yourself, or fix the permissions and scan again, before running git here.',
+    location: displayPath, evidence: String(reason),
+  };
+}
+
 async function scanOneConfig(ctx, file, displayPath, target, chain) {
   const { ruleset, root } = ctx;
   const findings = [];
@@ -267,12 +308,25 @@ async function scanOneConfig(ctx, file, displayPath, target, chain) {
     if (safe.reason === 'symlink' || safe.reason === 'outside-tree') {
       ctx.incomplete.add(`config not inspected (${safe.reason}): ${displayPath}`);
       findings.push(structuralFinding(ruleset, 'symlinked-config', displayPath, `${displayPath} (${safe.reason})`));
+    } else {
+      // 'unreadable' or 'not-a-file'. Discovery saw something at this path and we
+      // cannot read it, so we know nothing about it - which is not the same as
+      // knowing it is harmless. (review 02, N-3)
+      ctx.incomplete.add(`config could not be read: ${displayPath}`);
+      findings.push(unreadableConfigFinding(displayPath, safe.reason));
     }
     return findings;
   }
 
   let stats;
-  try { stats = await stat(file); } catch { return findings; }
+  try { stats = await stat(file); } catch {
+    // The file was there a moment ago (discovery found it) and now cannot be
+    // measured. Saying nothing here would report the repository as clean on the
+    // strength of a file nobody read. (review 02, N-3)
+    ctx.incomplete.add(`config could not be read: ${displayPath}`);
+    findings.push(unreadableConfigFinding(displayPath, 'could not be stat-ed'));
+    return findings;
+  }
   if (stats.size > MAX_CONFIG_BYTES) {
     findings.push({
       ruleId: 'config-too-large', severity: 'medium',
@@ -286,7 +340,11 @@ async function scanOneConfig(ctx, file, displayPath, target, chain) {
   }
 
   let text;
-  try { text = await readFile(file, 'utf-8'); } catch { return findings; }
+  try { text = await readFile(file, 'utf-8'); } catch (err) {
+    ctx.incomplete.add(`config could not be read: ${displayPath}`);
+    findings.push(unreadableConfigFinding(displayPath, err.code ?? 'unreadable'));
+    return findings;
+  }
 
   for (const entry of parseGitConfig(text)) {
     // include / includeIf: git applies the target as if written here, so follow it.
@@ -416,7 +474,13 @@ async function scanHooksDir(ctx, target) {
       }
     }
 
-    const head = await readHead(full);
+    const { text: head, readable } = await readPrefix(full);
+    if (!readable) {
+      ctx.incomplete.add(`hook script could not be read: ${location}`);
+      findings.push(structuralFinding(ruleset, 'active-hook', location,
+        `active hook script: ${e.name} (could not be read - contents unknown)`, 'high'));
+      continue;
+    }
     const id = matchesAny(head, ruleset.compiled.remoteExecIndicators) ? 'hook-fetches-remote-code'
       : ruleset.hookManagerMarkers.some(m => head.toLowerCase().includes(m.toLowerCase())) ? 'managed-hook-script'
         : 'active-hook';
@@ -431,6 +495,8 @@ async function submodulePathsFor(repoRoot, root) {
   const safe = await safeToRead(file, root);
   if (!safe.ok) return [];
   try {
+    const info = await stat(file);
+    if (info.size > MAX_CONFIG_BYTES) return [];
     const text = await readFile(file, 'utf-8');
     return parseGitConfig(text).filter(e => e.key === 'path').map(e => e.value.replace(/\/+$/, ''));
   } catch { return []; }
@@ -448,6 +514,19 @@ async function gitmodulesFindings(ctx, repoRoot, displayPrefix) {
     }
     return [];
   }
+  try {
+    const info = await stat(file);
+    if (info.size > MAX_CONFIG_BYTES) {
+      ctx.incomplete.add('.gitmodules too large to parse');
+      return [{
+        ruleId: 'config-too-large', severity: 'medium',
+        title: 'Git config file too large to parse',
+        explanation: `.gitmodules is ${Math.round(info.size / 1024 / 1024)} MB and was not inspected.`,
+        remediation: 'Open the file and look at it yourself before running git here.',
+        location: `${displayPrefix}.gitmodules`, evidence: `${info.size} bytes`,
+      }];
+    }
+  } catch { return []; }
   let text;
   try { text = await readFile(file, 'utf-8'); } catch { return []; }
   const out = [];
@@ -499,6 +578,19 @@ export async function scan(rootPath, ruleset, opts = {}) {
     }
     own.push(...await scanHooksDir(ctx, target));
 
+    if (target.caseVariant) {
+      // git on this file system does not read this directory at all, so a payload
+      // in it is not live here. It is live on Windows and macOS, which is why it
+      // is reported - but reporting it at full severity next to a line saying git
+      // ignores it here reads as a contradiction. (review 02, N-5)
+      for (const f of own) {
+        if (f.severity === 'critical' || f.severity === 'high') {
+          f.severity = 'medium';
+          f.explanation += ' On this file system git does not treat the containing directory as a git directory, so this value is not applied here; on Windows and macOS it is.';
+        }
+      }
+    }
+
     // Structural severity is not fixed: a git directory shipped as content is
     // unusual on its own and alarming when it also carries something git runs.
     if (target.kind === 'bare-repo' || (target.kind === 'nested-git' && !registered.has(target.relPath.replace(/\/\.git$/, '')))) {
@@ -535,10 +627,26 @@ export async function scan(rootPath, ruleset, opts = {}) {
   };
 }
 
-/** CLEAN / FINDINGS / INCOMPLETE - ERROR is decided by the caller. */
-export function statusOf(result, failOn = 'high') {
-  const threshold = SEVERITIES.indexOf(failOn);
-  if (result.findings.some(f => SEVERITIES.indexOf(f.severity) <= threshold)) return 'FINDINGS';
+/**
+ * status says what was found; the exit code says whether that fails your build.
+ * Keeping them apart matters: v0.4.0-rc1 reported status CLEAN alongside a filled
+ * summary whenever every finding sat below the threshold, which is a lie to any
+ * machine reading the field. (review 02, N-4)
+ *
+ * CLEAN = nothing found · FINDINGS = something found, at any severity ·
+ * INCOMPLETE = nothing found but part of the tree was not inspected.
+ * ERROR is decided by the caller.
+ */
+export function statusOf(result) {
+  if (result.findings.length > 0) return 'FINDINGS';
   if (result.incompleteReasons.length > 0) return 'INCOMPLETE';
   return 'CLEAN';
+}
+
+/** 0 CLEAN · 1 FINDINGS at or above the threshold · 3 INCOMPLETE. */
+export function exitCodeFor(result, failOn = 'high', allowIncomplete = false) {
+  const threshold = SEVERITIES.indexOf(failOn);
+  if (result.findings.some(f => SEVERITIES.indexOf(f.severity) <= threshold)) return 1;
+  if (result.incompleteReasons.length > 0 && !allowIncomplete) return 3;
+  return 0;
 }

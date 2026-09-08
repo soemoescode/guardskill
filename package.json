@@ -4,7 +4,7 @@
   "description": "Read-only scanner for the git settings that let a repository run code in a coding agent (Claude Code, Codex, Cursor, Copilot, Goose): fsmonitor, filters, hooks, aliases, includes, bare repositories in the tree. No dependencies, no network.",
   "type": "module",
   "bin": {
-    "guardskill": "./src/cli.js"
+    "guardskill": "bin/guardskill.js"
   },
   "main": "./src/scanners/gitconfig.js",
   "exports": {
@@ -14,7 +14,7 @@
   "scripts": {
     "pretest": "node test/fixtures/generate.js",
     "test": "node test/run.js",
-    "scan": "node src/cli.js"
+    "scan": "node bin/guardskill.js"
   },
   "engines": {
     "node": ">=18"
@@ -44,6 +44,7 @@
     "cli"
   ],
   "files": [
+    "bin",
     "src",
     "rules",
     "SKILL.md",

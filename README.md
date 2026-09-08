@@ -4,7 +4,7 @@
 
 ```bash
 # not yet on npm - clone and run it until the first release is published
-git clone https://github.com/soemoescode/guardskill && node guardskill/src/cli.js .
+git clone https://github.com/soemoescode/guardskill && node guardskill/bin/guardskill.js .
 ```
 
 Read-only. No network calls, no telemetry, no configuration, no account, no dependencies. It reads git configuration and hook scripts, prints what it found, and exits.
@@ -45,26 +45,42 @@ Four keys are deliberately **out of scope**, each with a reason in the inventory
 
 ## Usage
 
+From a clone, the entry point is `bin/guardskill.js`. Installed from npm, the same
+program is on the path as `guardskill`; `src/` is a library and running it does nothing.
+
 ```bash
-node src/cli.js .                        # scan the current project
-node src/cli.js ~/code/some-project      # scan a specific path
-node src/cli.js . --json                 # machine-readable
-node src/cli.js . --out report.md        # also write a Markdown report
-node src/cli.js . --fail-on critical     # only fail the build on critical findings
-node src/cli.js . --allow-incomplete     # accept a partial walk
-node src/cli.js . --exclude test/fixtures
+node bin/guardskill.js .                        # scan the current project
+node bin/guardskill.js ~/code/some-project      # scan a specific path
+node bin/guardskill.js . --json                 # machine-readable
+node bin/guardskill.js . --out report.md        # also write a Markdown report
+node bin/guardskill.js . --fail-on critical     # only fail the build on critical findings
+node bin/guardskill.js . --allow-incomplete     # accept a partial walk
+node bin/guardskill.js . --exclude test/fixtures
 ```
 
-### Exit codes
+### Status and exit code
 
-| Code | Status | Meaning |
-|---|---|---|
-| `0` | CLEAN | Nothing at or above `--fail-on`, and the whole tree was inspected |
-| `1` | FINDINGS | Findings at or above `--fail-on` (default: `high`) |
-| `2` | ERROR | The scan could not run: bad path, bad options, invalid rule set |
-| `3` | INCOMPLETE | Part of the tree was not inspected — a truncated walk, a refused symlink, an include outside the tree |
+These are two different answers and the tool reports both. The **status** in the JSON says what was found. The **exit code** says whether that is bad enough to fail on, given the threshold you set.
 
-`--fail-on` moves the severity threshold and nothing else. Completeness is a separate axis: an incomplete scan fails unless you pass `--allow-incomplete`, because "we did not look there" is not the same as "there is nothing there".
+| `status` | Meaning |
+|---|---|
+| `CLEAN` | Zero findings, and the whole tree was inspected |
+| `FINDINGS` | At least one finding, at any severity — including ones below your threshold |
+| `INCOMPLETE` | No findings, but part of the tree was not inspected |
+| `ERROR` | The scan did not run |
+
+| Code | Meaning |
+|---|---|
+| `0` | Nothing at or above `--fail-on`, and the whole tree was inspected |
+| `1` | Findings at or above `--fail-on` (default: `high`) |
+| `2` | The scan could not run: bad path, bad options, invalid rule set |
+| `3` | Part of the tree was not inspected — a truncated walk, a refused symlink, an include outside the tree |
+
+So a repository with one medium finding and a default threshold reports `status: FINDINGS` and exits `0`. That combination is deliberate: exit `0` is a policy answer, and a consumer reading the JSON still has to be able to see what was found before deciding. `CLEAN` means zero findings and nothing else.
+
+`--fail-on` moves the severity threshold and nothing else — it never removes a finding from the report. Completeness is a separate axis again: an incomplete scan fails unless you pass `--allow-incomplete`, because "we did not look there" is not the same as "there is nothing there".
+
+With `--json`, a failure answers in JSON too: an error document with the same fields, `status: "ERROR"`, `scanned: false` and the reason in `reason`, so a consumer piping into a parser gets a diagnosis instead of a parse error. The human-readable reason also goes to stderr.
 
 In CI:
 

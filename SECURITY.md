@@ -15,6 +15,7 @@ GuardSkill runs on directories that are, by assumption, hostile. Everything it r
 - **The directory walk does not follow symlinks, and neither does config reading.** A config file that is a symlink, or whose resolved path leaves the scanned tree, is refused, reported, and marks the scan INCOMPLETE. The file is not read, so a delivered directory cannot point the scanner at `~/.gitconfig` and have its contents printed.
 - **No network access.** No outbound connections, no telemetry. Identical behaviour offline.
 - **No dependencies.** Nothing is installed alongside it.
+- **A file it cannot read is a finding, not a pass.** A config or hook script that exists but cannot be opened is reported and marks the scan INCOMPLETE. Silence about a file that was never read would be the one failure mode a scanner cannot have.
 - **Bounded traversal and bounded reads.** Depth and entry count are capped; a config above 4 MB is reported rather than parsed. A walk that stops early is reported as INCOMPLETE, never as clean.
 - **The report cannot be rewritten by its subject.** Control characters are stripped from every field before it reaches a terminal or a Markdown file — values, paths, titles and explanations alike. A directory called `vendor<ESC>[2K\rNo findings` cannot erase the line it appears on. The JSON output keeps raw values, because it is not a terminal, with the escape character itself escaped.
 
@@ -41,10 +42,14 @@ Every behavioural claim in the README, this file, `SKILL.md` and the project pag
 | 22 hostile fixtures are each caught by their own rule | README | `each vulnerable fixture is detected by the rule it was written for` |
 | No real-world corpus repository produces a critical | README | `no corpus repository produces a critical finding` |
 | The rule set matches the published key inventory | README | `every rule in the ruleset appears in the inventory`, `every key marked covered names a rule that exists` |
-| The parser agrees with git, or declares why not | inventory, CHANGELOG | `the parser agrees with git, or declares why it does not` |
+| The parser agrees with git, or declares why not — over a generated permutation of quote, comment and escape positions, not only hand-picked cases | inventory, CHANGELOG | `the parser agrees with git, or declares why it does not`, `every value git accepts is at least seen by the parser`, `the golden table records which git produced it` |
 | An invalid rule set fails loudly instead of pinning the exit code | README | `F-12 an invalid ruleset is rejected with a clear error` |
 | A hooks directory is judged by its scripts, not its name | README | `a hostile hooks directory cannot hide behind a familiar name` and `a real husky project still produces nothing above informational` |
 | Structure is medium on its own and critical with an execution key | README | `F-10a a clean structural finding is not critical on its own` and `a bare repository hidden in the tree is reported as critical` |
+| The published package runs: the installed binary prints a report and sets an exit code | README, CHANGELOG | `the installed binary prints its version and exits 0`, `the installed binary finds a real finding and exits 1`, `the tarball npm publish would upload contains the entry point` |
+| `status` reports what was found; the exit code reports what was asked | README | `status reports what was found; the exit code reports what was asked (N-4)` |
+| A `--json` run answers in JSON when it fails as well | README | `--json answers in JSON when it fails, too` |
+| A config that cannot be read is reported, never counted as clean | README, SECURITY | `an unreadable config is reported, not silently treated as clean` |
 
 ## Accepted residual risk
 
@@ -53,4 +58,4 @@ These are known and deliberately not closed in 0.4.0. They are listed here becau
 - **Four executing config keys are out of scope**: `sendemail.smtpServer`, `instaweb.httpd`, `ssh.variant` and the HTTP proxy settings. Reasons per key in `rules/git-exec-keys-inventory.md`. Each is reachable only through a command a coding agent does not run, or names something other than a program.
 - **The real-world corpus is reconstructed, not cloned.** The five fixtures reproduce shapes observed in an independent review, not verified checkouts pinned by commit SHA. See `test/corpus/PROVENANCE.md`. A reconstruction cannot surprise you the way a real checkout can.
 - **Detection stops at git level.** `.claude/settings.json`, `.vscode/tasks.json`, MCP server definitions and npm lifecycle scripts are not inspected. The README says so, and that stays true until the next class ships.
-- **The parser differs from git in four documented ways**, all of which keep more of the value than git does and therefore cannot hide a match. Listed with reasons in `test/golden.test.js`.
+- **One parser deviation remains, on valueless keys.** `key` with no `=` is treated as the string `true`, because a rule has to evaluate something; git treats it as boolean true. Every other case in the golden table now matches `git config --file` byte for byte. Listed with reasons in `test/golden.test.js`.

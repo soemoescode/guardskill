@@ -1,18 +1,26 @@
-#!/usr/bin/env node
+// Library half of the CLI: argument parsing, the scan, the four end states.
+// It exports run() and does nothing on import - bin/guardskill.js is the program.
 import path from 'node:path';
-import { writeFile, readFile, stat } from 'node:fs/promises';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { loadRules, scan, statusOf } from './scanners/gitconfig.js';
+import { writeFile, stat } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { loadRules, scan, statusOf, exitCodeFor } from './scanners/gitconfig.js';
 import { formatText, formatMarkdown, formatJson } from './report/formatter.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RULES_PATH = path.join(__dirname, '..', 'rules', 'git-exec-keys.json');
 const PKG_PATH = path.join(__dirname, '..', 'package.json');
 const SEVERITIES = ['critical', 'high', 'medium', 'low'];
+
+// Read once, synchronously, so the error path can name the version too: an error
+// document that says version "0" is harder to act on than the failure it reports.
+export const VERSION = (() => {
+  try { return JSON.parse(readFileSync(PKG_PATH, 'utf-8')).version; } catch { return '0'; }
+})();
 export const DEFAULT_MAX_DEPTH = 24;
 
 // CLEAN 0 · FINDINGS 1 · ERROR 2 · INCOMPLETE 3
-const EXIT = { CLEAN: 0, FINDINGS: 1, ERROR: 2, INCOMPLETE: 3 };
+export const EXIT = { CLEAN: 0, FINDINGS: 1, ERROR: 2, INCOMPLETE: 3 };
 
 const HELP = `GuardSkill - scans a project for git settings that make a coding agent run code.
 
@@ -42,6 +50,17 @@ report you ask for with --out. It never executes anything it finds.`;
 
 class UsageError extends Error {}
 
+// Remembered so an error can still answer in the shape the caller asked for.
+let jsonRequested = false;
+export function errorDocument(message, version = VERSION) {
+  return JSON.stringify({
+    tool: 'guardskill', version, schemaVersion: 1, path: null, status: 'ERROR',
+    scanned: false, reason: message, targetCount: 0, dirsVisited: 0, truncated: false,
+    incompleteReasons: [], summary: {}, findings: [],
+  }, null, 2);
+}
+export const wantsJson = () => jsonRequested;
+
 export function parseArgs(argv) {
   const args = {
     target: null, out: null, json: false, failOn: 'high',
@@ -68,15 +87,15 @@ export function parseArgs(argv) {
   return args;
 }
 
-async function run() {
+export async function run() {
   const argv = process.argv.slice(2);
   if (argv.includes('-h') || argv.includes('--help')) { console.log(HELP); return EXIT.CLEAN; }
 
-  const pkg = JSON.parse(await readFile(PKG_PATH, 'utf-8'));
-  if (argv.includes('-v') || argv.includes('--version')) { console.log(pkg.version); return EXIT.CLEAN; }
+  if (argv.includes('-v') || argv.includes('--version')) { console.log(VERSION); return EXIT.CLEAN; }
 
   const args = parseArgs(argv);
   const target = path.resolve(args.target);
+  jsonRequested = args.json;
 
   try {
     const info = await stat(target);
@@ -89,10 +108,10 @@ async function run() {
   const ruleset = await loadRules(RULES_PATH);
   const result = await scan(target, ruleset, { maxDepth: args.maxDepth, exclude: args.exclude });
 
-  let status = statusOf(result, args.failOn);
-  if (status === 'INCOMPLETE' && args.allowIncomplete) status = 'CLEAN';
+  const status = statusOf(result);
+  const code = exitCodeFor(result, args.failOn, args.allowIncomplete);
 
-  if (args.json) console.log(formatJson(result, pkg.version, status));
+  if (args.json) console.log(formatJson(result, VERSION, status));
   else console.log(formatText(result, { color: args.color && process.stdout.isTTY }));
 
   if (args.out) {
@@ -100,22 +119,5 @@ async function run() {
     if (!args.json) console.log(`\nMarkdown report written to ${args.out}`);
   }
 
-  return EXIT[status];
-}
-
-// No process.exit() on any path that has written to stdout. Node's own docs are
-// explicit: writes to stdout can be asynchronous, and exiting immediately after
-// one truncates it. Through a pipe that cut used to land at exactly 64 KB, in
-// the middle of the JSON, with the exit code still saying success.
-// Only run when this file *is* the program. Importing it (the contract test does,
-// to compare the help text against the real default) must not start a scan and
-// must not touch the importer's exit code.
-const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
-if (invokedDirectly) {
-  run()
-    .then(code => { process.exitCode = code; })
-    .catch(err => {
-      console.error(`guardskill: ${err.message}`);
-      process.exitCode = EXIT.ERROR;
-    });
+  return code;
 }

