@@ -1,0 +1,6 @@
+node_modules/
+test/fixtures/clean/
+test/fixtures/vulnerable/
+test/fixtures/.symlink-case/
+*.log
+guardskill-report.md

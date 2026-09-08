@@ -1,0 +1,329 @@
+{
+  "version": "2026-09-08",
+  "sources": [
+    "https://www.manifold.security/blog/ai-coding-agents-git-hijack",
+    "https://github.com/advisories/GHSA-9ccr-r5hg-74gf",
+    "https://git-scm.com/docs/git-config"
+  ],
+  "safeLiterals": [
+    "true",
+    "false",
+    "1",
+    "0",
+    "yes",
+    "no",
+    "on",
+    "off",
+    ""
+  ],
+  "safePagers": [
+    "less",
+    "more",
+    "cat",
+    "delta",
+    "bat",
+    "diff-so-fancy",
+    "diffr"
+  ],
+  "safeEditors": [
+    "vi",
+    "vim",
+    "nvim",
+    "nano",
+    "pico",
+    "emacs",
+    "emacsclient",
+    "code",
+    "code-insiders",
+    "subl",
+    "mate",
+    "gedit",
+    "kate",
+    "notepad",
+    "notepad++",
+    "idea",
+    "webstorm",
+    "helix",
+    "hx",
+    "micro"
+  ],
+  "safeCommandPrefixes": [
+    "git-lfs",
+    "git lfs",
+    "git-crypt",
+    "gpg",
+    "git",
+    "npx --no-install prettier"
+  ],
+  "rules": [
+    {
+      "id": "core-fsmonitor",
+      "match": {
+        "section": "core",
+        "key": "fsmonitor"
+      },
+      "matchType": "exec-unless-boolean",
+      "severity": "critical",
+      "title": "core.fsmonitor runs an external command",
+      "explanation": "Git invokes core.fsmonitor while refreshing the index, which happens during ordinary commands such as git status and git diff. Coding agents run those commands automatically when they open a project, so a command placed here executes on your machine without any prompt. This is the primary vector described in the GitSpawn research and in CVE-2026-45033.",
+      "remediation": "Remove the key, or run git with -c core.fsmonitor=false until you have reviewed it."
+    },
+    {
+      "id": "core-sshcommand",
+      "match": {
+        "section": "core",
+        "key": "sshcommand"
+      },
+      "matchType": "exec-always",
+      "severity": "high",
+      "title": "core.sshCommand replaces the ssh binary",
+      "explanation": "Any fetch, pull or push over ssh runs this command instead of ssh.",
+      "remediation": "Remove the key unless you deliberately set it yourself."
+    },
+    {
+      "id": "core-gitproxy",
+      "match": {
+        "section": "core",
+        "key": "gitproxy"
+      },
+      "matchType": "exec-always",
+      "severity": "high",
+      "title": "core.gitProxy runs an external command for git:// connections",
+      "explanation": "The configured program is executed instead of a direct connection.",
+      "remediation": "Remove the key unless your network genuinely requires a proxy command."
+    },
+    {
+      "id": "core-pager",
+      "match": {
+        "section": "core",
+        "key": "pager"
+      },
+      "matchType": "exec-unless-safe-pager",
+      "severity": "medium",
+      "title": "core.pager points at an unusual command",
+      "explanation": "The pager runs whenever git prints paged output such as log, diff or show.",
+      "remediation": "Set it to a known pager (less, delta, bat) or remove it."
+    },
+    {
+      "id": "core-editor",
+      "match": {
+        "section": "core",
+        "key": "editor"
+      },
+      "matchType": "exec-unless-safe-editor",
+      "severity": "medium",
+      "title": "core.editor points at an unusual command",
+      "explanation": "The editor runs on commit, rebase and tag operations.",
+      "remediation": "Set it to a known editor or remove it."
+    },
+    {
+      "id": "sequence-editor",
+      "match": {
+        "section": "sequence",
+        "key": "editor"
+      },
+      "matchType": "exec-unless-safe-editor",
+      "severity": "medium",
+      "title": "sequence.editor points at an unusual command",
+      "explanation": "This command runs during an interactive rebase.",
+      "remediation": "Set it to a known editor or remove it."
+    },
+    {
+      "id": "core-hookspath",
+      "match": {
+        "section": "core",
+        "key": "hookspath"
+      },
+      "matchType": "hooks-path",
+      "severity": "high",
+      "title": "core.hooksPath redirects hooks to a non-default directory",
+      "explanation": "Git normally runs hooks from .git/hooks. An override can point at a directory shipped inside the repository, so its scripts run on ordinary git operations while .git/hooks looks untouched.",
+      "remediation": "Inspect the target directory before running any git command in this repository."
+    },
+    {
+      "id": "include-path",
+      "match": {
+        "sectionPrefix": "include|includeif",
+        "key": "path"
+      },
+      "matchType": "always-flag",
+      "severity": "medium",
+      "title": "include / includeIf loads configuration from another file",
+      "explanation": "Included files can add any of the keys on this list later, which keeps the dangerous value out of the file you inspect.",
+      "remediation": "Open the included file and check it against this same list. A shared ~/.gitconfig you created yourself is normal."
+    },
+    {
+      "id": "diff-external",
+      "match": {
+        "section": "diff",
+        "key": "external"
+      },
+      "matchType": "exec-always",
+      "severity": "high",
+      "title": "diff.external runs an external diff program",
+      "explanation": "Git runs this program for every diff, including the diffs coding agents generate to read your changes.",
+      "remediation": "Remove the key unless you configured the tool yourself."
+    },
+    {
+      "id": "credential-helper",
+      "match": {
+        "section": "credential",
+        "key": "helper"
+      },
+      "matchType": "exec-unless-known-helper",
+      "severity": "high",
+      "title": "credential.helper runs a program that receives your credentials",
+      "explanation": "A credential helper is executed by git and is handed the host and username it is asked about. A repository-local helper can both execute code and capture tokens.",
+      "remediation": "Credential helpers belong in your global config, not in a repository. Remove it here."
+    },
+    {
+      "id": "alias-shell",
+      "match": {
+        "section": "alias",
+        "anyKey": true
+      },
+      "matchType": "shell-alias",
+      "severity": "high",
+      "title": "Git alias executes a shell command",
+      "explanation": "An alias value starting with ! is run through the shell. Aliases defined inside a repository run as soon as someone uses that alias name.",
+      "remediation": "Read the command. Aliases that shell out do not belong in a repository-local config."
+    },
+    {
+      "id": "filter-driver",
+      "match": {
+        "sectionPrefix": "filter",
+        "keys": [
+          "clean",
+          "smudge",
+          "process"
+        ]
+      },
+      "matchType": "exec-unless-known-command",
+      "severity": "high",
+      "title": "Filter driver runs a command on checkout or commit",
+      "explanation": "Filter drivers referenced from .gitattributes run automatically whenever matching files are checked out or staged. git-lfs uses this legitimately; anything else deserves a look.",
+      "remediation": "Check .gitattributes to see which files trigger this driver, and read the command."
+    },
+    {
+      "id": "diff-textconv",
+      "match": {
+        "sectionPrefix": "diff",
+        "keys": [
+          "textconv"
+        ]
+      },
+      "matchType": "exec-unless-known-command",
+      "severity": "high",
+      "title": "diff textconv runs a command to render a file as text",
+      "explanation": "Referenced from .gitattributes and executed whenever git diffs a matching file.",
+      "remediation": "Check .gitattributes and read the command."
+    },
+    {
+      "id": "merge-driver",
+      "match": {
+        "sectionPrefix": "merge",
+        "keys": [
+          "driver"
+        ]
+      },
+      "matchType": "exec-unless-known-command",
+      "severity": "high",
+      "title": "Custom merge driver runs a command during a merge",
+      "explanation": "Executed by git when merging files that .gitattributes assigns to this driver.",
+      "remediation": "Check .gitattributes and read the command."
+    },
+    {
+      "id": "tool-cmd",
+      "match": {
+        "sectionPrefix": "mergetool|difftool",
+        "keys": [
+          "cmd",
+          "path"
+        ]
+      },
+      "matchType": "exec-always",
+      "severity": "medium",
+      "title": "Merge/diff tool command defined in the repository",
+      "explanation": "Runs when someone starts git mergetool or git difftool.",
+      "remediation": "Read the command before using those subcommands."
+    },
+    {
+      "id": "uploadpack-hook",
+      "match": {
+        "section": "uploadpack",
+        "key": "packobjectshook"
+      },
+      "matchType": "exec-always",
+      "severity": "high",
+      "title": "uploadpack.packObjectsHook runs a command when the repository is fetched from",
+      "explanation": "Executed on the serving side of a fetch or clone.",
+      "remediation": "Remove the key unless you run this repository as a server and set it yourself."
+    }
+  ],
+  "structural": [
+    {
+      "id": "bare-repo-in-tree",
+      "severity": "critical",
+      "title": "Bare git repository found inside the project tree",
+      "explanation": "Git discovers bare repositories while walking directories and applies their configuration, including keys that execute commands. This is the exact mechanism of CVE-2026-45033 (GitHub Copilot CLI, CVSS 8.5). A bare repository that ships inside a project is almost never legitimate.",
+      "remediation": "Do not open this project with a coding agent until you have inspected the directory. Setting safe.bareRepository=explicit in your global git config stops git from picking up bare repositories automatically."
+    },
+    {
+      "id": "nested-git-dir",
+      "severity": "high",
+      "title": "Nested .git directory below the project root",
+      "explanation": "A .git directory that is not the project's own repository arrived as content, for example through a zip file, a shared drive or a sync folder. Its config is read by git and by coding agents that gather context from it. Submodules are the legitimate exception.",
+      "remediation": "Check whether this is a registered submodule (.gitmodules). If it is not, treat it as untrusted and inspect its config."
+    },
+    {
+      "id": "active-hook",
+      "severity": "high",
+      "title": "Active hook script present in .git/hooks",
+      "explanation": "A freshly cloned repository only contains .sample files. An active hook runs automatically on ordinary git operations such as commit, checkout and merge.",
+      "remediation": "Read the script. If you did not create it, remove it before running git commands here."
+    },
+    {
+      "id": "managed-hooks-dir",
+      "severity": "low",
+      "title": "Hooks directory managed by a known hook manager",
+      "explanation": "core.hooksPath points at a conventional, repository-managed hooks directory (husky, lefthook or a .githooks convention). This is normal in many projects. GuardSkill still read the scripts in it and found nothing that fetches or decodes remote code.",
+      "remediation": "No action needed if you expect this project to use managed hooks."
+    },
+    {
+      "id": "managed-hook-script",
+      "severity": "low",
+      "title": "Hook script installed by a known hook manager",
+      "explanation": "An active hook in .git/hooks carries the marker of a known hook manager. This is how husky, lefthook and pre-commit install themselves.",
+      "remediation": "No action needed if you installed that tool."
+    },
+    {
+      "id": "hook-fetches-remote-code",
+      "severity": "critical",
+      "title": "Hook script downloads or decodes code before running it",
+      "explanation": "A git hook that pipes a download into a shell, decodes base64, or evaluates a command substitution is doing something a build hook has no reason to do. Hooks run automatically on ordinary git operations.",
+      "remediation": "Do not run any git command in this repository until you have read the script."
+    }
+  ],
+  "knownHooksDirs": [
+    ".husky",
+    ".husky/_",
+    ".githooks",
+    ".hooks"
+  ],
+  "hookManagerMarkers": [
+    "husky",
+    "pre-commit.com",
+    "pre-commit run",
+    "lefthook",
+    "overcommit",
+    "simple-git-hooks"
+  ],
+  "remoteExecIndicators": [
+    "(?:curl|wget)\\s+[^|\\n]*\\|\\s*(?:sh|bash|zsh|python|node)",
+    "base64\\s+(?:-d|--decode)",
+    "\\bnc\\s+-[a-z]*e",
+    "eval\\s+\\$\\(",
+    "(?:curl|wget)\\s+[^\\n]*(?:-o|--output)\\s",
+    "python[0-9.]*\\s+-c\\s"
+  ]
+}

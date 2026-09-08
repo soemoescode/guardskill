@@ -1,0 +1,23 @@
+{
+  "name": "guardskill",
+  "version": "0.2.0",
+  "description": "Read-only scanner for git settings that let a malicious repository run code in coding agents (Claude Code, Codex, Cursor, Copilot, Goose). Covers the GitSpawn class and CVE-2026-45033.",
+  "type": "module",
+  "bin": { "guardskill": "./src/cli.js" },
+  "main": "./src/scanners/gitconfig.js",
+  "exports": { ".": "./src/scanners/gitconfig.js", "./rules": "./rules/git-exec-keys.json" },
+  "scripts": {
+    "pretest": "node test/fixtures/generate.js",
+    "test": "node --test ./test/*.test.js",
+    "scan": "node src/cli.js"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "author": "Helios IT Solutions B.V. (https://helios-it.nl)",
+  "homepage": "https://github.com/REPLACE_OWNER/guardskill#readme",
+  "repository": { "type": "git", "url": "git+https://github.com/REPLACE_OWNER/guardskill.git" },
+  "bugs": { "url": "https://github.com/REPLACE_OWNER/guardskill/issues" },
+  "keywords": ["security", "coding-agent", "ai-agent", "claude-code", "cursor", "copilot", "codex", "git", "gitspawn", "supply-chain", "static-analysis", "cli"],
+  "files": ["src", "rules", "SKILL.md", "README.md", "SECURITY.md", "CHANGELOG.md", "LICENSE"],
+  "publishConfig": { "access": "public" }
+}
