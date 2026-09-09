@@ -1,0 +1,11 @@
+# One newline convention in every checkout.
+#
+# Without this, a Windows checkout hands every text file back with CRLF. A test
+# that reads a file and matches a pattern written against "\n" then finds nothing
+# and reports the file as malformed - green on Linux and macOS, red on the Windows
+# matrix, about a file nobody touched. That happened once; this is the fix for the
+# class rather than for the one test.
+* text=auto eol=lf
+
+# A patch carries its own line endings. Rewriting them makes it fail to apply.
+*.patch -text

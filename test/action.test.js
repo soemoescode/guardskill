@@ -17,7 +17,13 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 
-const action = async () => readFile(path.join(ROOT, 'action.yml'), 'utf-8');
+// Read with the line endings normalised. On a Windows checkout git hands this
+// file back with CRLF, and a pattern written against "\n" then matches nothing --
+// which is how the first version of this suite reported "action.yml must declare
+// a version input" about a file that plainly declares one. The subject here is
+// the content, never the checkout's newline convention.
+const action = async () =>
+  (await readFile(path.join(ROOT, 'action.yml'), 'utf-8')).replace(/\r\n/g, '\n');
 
 test('the Action runs the version this repository publishes', async () => {
   const yml = await action();
