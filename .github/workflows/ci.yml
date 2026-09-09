@@ -1,7 +1,12 @@
 name: CI
 
 on:
+  # Branches only. A tag push already starts release.yml, whose verify job runs
+  # the same nine-way matrix; letting ci.yml fire on the same tag ran eighteen
+  # jobs at once for one release and made the runners contend with themselves.
   push:
+    branches:
+      - main
   pull_request:
   schedule:
     - cron: '0 6 * * 1'

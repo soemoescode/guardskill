@@ -144,19 +144,32 @@ test('the help text states the same default depth the code uses', async () => {
 });
 
 test('a wide tree stays within its measured budget', async () => {
-  // Review 01 measured 8,721 directories in 0.58 s. The absolute ceiling here is
-  // deliberately looser than that measurement: a shared CI runner is slower than
-  // a workstation, and a perf test that goes red on a busy machine teaches people
-  // to ignore red. The ratio between depth 8 and depth 24 is the stable signal,
-  // and that is asserted tightly.
+  // What this used to measure, and why it stopped a release.
+  //
+  // The fixture was three levels deep, so depth 8 and depth 24 walked exactly the
+  // same directories -- the "depth ratio" compared two identical scans. The deep
+  // one ran first, on a cold page cache, straight after 4,000 mkdir calls; the
+  // shallow one ran second, warm. On a workstation both are fast and the ratio
+  // sits near 1. On a loaded CI runner the first scan took 2,185 ms and the second
+  // 391 ms, the ratio read 5.6x, and the assertion reported a depth regression
+  // that did not exist. It was measuring cache warmth. (v0.4.1)
+  //
+  // Fixed by making the claim true: the tree is now deeper than the shallow limit
+  // so the two depths really do differ, a warm-up scan absorbs the cold cache, and
+  // the ratio carries a floor so a few hundred milliseconds of runner jitter
+  // cannot look like a blow-up.
   const dir = await repo('wide', CLEAN);
   const mk = [];
   for (let i = 0; i < 4000; i++) mk.push(mkdir(path.join(dir, `pkg${i % 50}`, `sub${i}`, 'src'), { recursive: true }));
+  // One genuinely deep branch, so depth 8 cannot reach what depth 24 reaches.
+  mk.push(mkdir(path.join(dir, 'deep', ...Array.from({ length: 20 }, (_, i) => `l${i}`)), { recursive: true }));
   await Promise.all(mk);
   await write(path.join(dir, 'pkg7', 'sub7', '.git', 'config'), '[core]\n\tfsmonitor = /tmp/x.sh\n');
 
   const { loadRules, scan } = await import('../src/scanners/gitconfig.js');
   const rules = await loadRules(path.join(ROOT, 'rules', 'git-exec-keys.json'));
+
+  await scan(dir, rules, { maxDepth: 24 });          // warm-up: not measured
 
   const before = process.memoryUsage().heapUsed;
   const t0 = Date.now();
@@ -165,15 +178,28 @@ test('a wide tree stays within its measured budget', async () => {
   const heapMb = (process.memoryUsage().heapUsed - before) / 1024 / 1024;
 
   const t1 = Date.now();
-  await scan(dir, rules, { maxDepth: 8 });
+  const shallow = await scan(dir, rules, { maxDepth: 8 });
   const shallowMs = Math.max(Date.now() - t1, 1);
 
   assert.ok(deep.findings.some(f => f.ruleId === 'core-fsmonitor'), 'the hidden repository must still be found');
   assert.ok(deep.dirsVisited > 4000, `expected a wide walk, visited ${deep.dirsVisited}`);
+
+  // The non-timing half of the depth claim, and the durable one: depth has to
+  // change what is reached. This fails on a machine of any speed.
+  assert.ok(deep.dirsVisited > shallow.dirsVisited,
+    `depth 24 reached ${deep.dirsVisited} directories and depth 8 reached ${shallow.dirsVisited} - ` +
+    'the deep branch in the fixture is no longer deeper than the shallow limit, so the comparison below means nothing');
+
   assert.ok(deepMs < 10_000, `scan of ${deep.dirsVisited} directories took ${deepMs}ms`);
   assert.ok(heapMb < 200, `scan retained ${heapMb.toFixed(0)} MB of heap`);
-  assert.ok(deepMs < shallowMs * 4,
-    `raising the depth from 8 to 24 cost ${deepMs}ms against ${shallowMs}ms - that is a regression, not a deeper walk`);
+
+  // Both scans now walk a warm tree, so they should land within a fraction of
+  // each other. The floor keeps runner jitter on a sub-second measurement from
+  // producing a large ratio out of two small numbers.
+  const budget = Math.max(shallowMs * 4, 3_000);
+  assert.ok(deepMs < budget,
+    `depth 24 cost ${deepMs}ms against ${shallowMs}ms at depth 8 (budget ${budget}ms) - ` +
+    'that is superlinear in depth, which the walk should not be');
 });
 
 test('status reports what was found; the exit code reports what was asked (N-4)', async () => {
