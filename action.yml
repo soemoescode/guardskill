@@ -1,0 +1,79 @@
+name: 'GuardSkill'
+description: 'Scan a repository for git settings that let it execute code in a coding agent.'
+branding:
+  icon: 'shield'
+  color: 'gray-dark'
+
+inputs:
+  path:
+    description: 'Directory to scan.'
+    required: false
+    default: '.'
+  fail-on:
+    description: 'Lowest severity that fails the job: critical, high, medium or low.'
+    required: false
+    default: 'high'
+  exclude:
+    description: 'Comma-separated directories to skip.'
+    required: false
+    default: ''
+  allow-incomplete:
+    description: 'Accept a partial walk instead of failing with exit code 3.'
+    required: false
+    default: 'false'
+  json:
+    description: 'Emit machine-readable JSON instead of the human-readable report.'
+    required: false
+    default: 'false'
+  version:
+    description: 'GuardSkill version to run. Pin this to a fixed version.'
+    required: false
+    default: '0.4.0'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run GuardSkill
+      shell: bash
+      env:
+        GS_PATH: ${{ inputs.path }}
+        GS_FAIL_ON: ${{ inputs.fail-on }}
+        GS_EXCLUDE: ${{ inputs.exclude }}
+        GS_ALLOW_INCOMPLETE: ${{ inputs.allow-incomplete }}
+        GS_JSON: ${{ inputs.json }}
+        GS_VERSION: ${{ inputs.version }}
+      run: |
+        # Inputs are passed through the environment and read as "$GS_..." on
+        # purpose. Interpolating ${{ inputs.* }} straight into this script would
+        # turn every input into a shell injection -- which is the class of bug
+        # this tool exists to find. Do not "simplify" it.
+        set -euo pipefail
+
+        case "$GS_FAIL_ON" in
+          critical|high|medium|low) ;;
+          *) echo "guardskill: fail-on must be critical, high, medium or low (got: $GS_FAIL_ON)" >&2; exit 2 ;;
+        esac
+
+        case "$GS_VERSION" in
+          latest|[0-9]*.[0-9]*.[0-9]*) ;;
+          *) echo "guardskill: version must be a semver version or 'latest' (got: $GS_VERSION)" >&2; exit 2 ;;
+        esac
+
+        args=("$GS_PATH" --fail-on "$GS_FAIL_ON")
+
+        if [ -n "$GS_EXCLUDE" ]; then
+          IFS=',' read -ra excluded <<< "$GS_EXCLUDE"
+          for dir in "${excluded[@]}"; do
+            dir="${dir#"${dir%%[![:space:]]*}"}"
+            dir="${dir%"${dir##*[![:space:]]}"}"
+            [ -n "$dir" ] && args+=(--exclude "$dir")
+          done
+        fi
+
+        [ "$GS_ALLOW_INCOMPLETE" = "true" ] && args+=(--allow-incomplete)
+        [ "$GS_JSON" = "true" ] && args+=(--json)
+
+        # --ignore-scripts: this action installs a package into someone else's
+        # CI on every run. GuardSkill has no lifecycle scripts, so the flag costs
+        # nothing today and means a future compromised version cannot run one.
+        npx --yes --ignore-scripts "guardskill@$GS_VERSION" "${args[@]}"

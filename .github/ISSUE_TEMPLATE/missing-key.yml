@@ -1,0 +1,39 @@
+name: Missing execution key
+description: A git setting that can execute a command, which GuardSkill does not check.
+title: "[coverage] "
+labels: ["coverage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Coverage is tracked in `rules/git-exec-keys-inventory.md`, where every key is
+        either `covered` with a rule ID or `out-of-scope` with a reason. A source
+        reference is required so the inventory stays checkable rather than becoming a
+        list of opinions.
+  - type: input
+    id: key
+    attributes:
+      label: The configuration key
+      placeholder: core.someKey
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Where git documents it
+      description: Section of git-config(1), or a URL. Required.
+      placeholder: "git-config(1), core.someKey"
+    validations:
+      required: true
+  - type: textarea
+    id: mechanism
+    attributes:
+      label: How it results in a command being executed
+      description: Which git operation reads it, and what it does with the value.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: A minimal configuration that demonstrates it
+      render: ini

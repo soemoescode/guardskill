@@ -37,6 +37,8 @@ jobs:
         with:
           node-version: 22.x
           registry-url: https://registry.npmjs.org
+      - name: npm CLI new enough for trusted publishing
+        run: npm install -g npm@^11.5.1
       - name: Tag and package version must match
         run: |
           tag="${GITHUB_REF_NAME#v}"
@@ -45,6 +47,8 @@ jobs:
           test "$tag" = "$pkg"
       - name: Refuse to publish a placeholder
         run: node -e "const p=require('./package.json'); if(/REPLACE_|<your|TODO/i.test(JSON.stringify(p))) { throw new Error('package.json still contains a placeholder'); }"
+      # Trusted publishing. npm authenticates this workflow through the OIDC
+      # token granted by `id-token: write` above, so no publish credential is
+      # stored in a repository secret -- which is the same class of problem this
+      # tool reports in other repositories.
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

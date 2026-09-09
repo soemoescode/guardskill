@@ -1,0 +1,51 @@
+name: False positive
+description: GuardSkill flagged something that is legitimate.
+title: "[false positive] "
+labels: ["false-positive"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        False positives are the most useful bug report this project gets. A scanner
+        that cries wolf gets uninstalled, so a report here is worth more than a star.
+        Please remove any secret, token or private path before you paste anything.
+  - type: input
+    id: rule
+    attributes:
+      label: Rule ID
+      description: The `ruleId` from the finding. `--json` prints it if the report does not.
+      placeholder: git-exec-fsmonitor
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: The configuration that was flagged
+      description: The relevant lines only, with secrets and private paths removed.
+      render: ini
+    validations:
+      required: true
+  - type: input
+    id: legitimate
+    attributes:
+      label: What legitimately sets this
+      description: git-lfs, husky, lefthook, sops, nbstripout, git-crypt, a custom pager, something else.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: GuardSkill version
+      placeholder: "0.4.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+    validations:
+      required: true

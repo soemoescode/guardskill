@@ -93,6 +93,15 @@ In CI:
   run: npx guardskill . --fail-on high
 ```
 
+Or as an action, which pins the version for you:
+
+```yaml
+- uses: soemoescode/guardskill@v0.4.0
+  with:
+    fail-on: high          # critical, high, medium or low
+    exclude: test/fixtures # comma-separated, optional
+```
+
 The JSON output carries `schemaVersion: 1`. Fields will be added within version 1; existing ones will not change meaning.
 
 Example output:
@@ -140,7 +149,13 @@ Every one of those sentences is tied to the test that proves it in [`SECURITY.md
 
 ## Use it as an agent skill
 
-`SKILL.md` lets a coding agent run the scan itself before it opens an unfamiliar project. Copy the directory into your skills folder, or point your agent at the repository.
+`SKILL.md` lets a coding agent run the scan itself before it opens an unfamiliar project — so the check happens without you remembering to ask for it.
+
+```bash
+npx skills add soemoescode/guardskill
+```
+
+That installs the skill for Claude Code, Cursor and Codex; `--agent claude-code` narrows it to one. You can also copy `SKILL.md` into your skills folder by hand, or point your agent at this repository.
 
 ## Development
 
@@ -153,8 +168,16 @@ New detection rules go in `rules/git-exec-keys.json` and must be listed in `rule
 
 ## Roadmap
 
-A separate confidence axis alongside severity, and the next detection class, are planned for 0.5.0. Continuous monitoring, Slack and Teams alerts and auto-fix pull requests are planned as a paid layer. The scanner stays free and MIT-licensed, and the detection rules stay in the open repository — a security tool whose rules you cannot read is not one you should trust.
+A separate confidence axis alongside severity is planned for 0.5.0, together with the next detection class: the agent's own settings files — `.claude/settings.json`, `.mcp.json` and comparable MCP server definitions — which reach the same outcome by a different route, and unlike the git-level vectors they travel with an ordinary `git clone`. Continuous monitoring, Slack and Teams alerts and auto-fix pull requests are planned as a paid layer. The scanner stays free and MIT-licensed, and the detection rules stay in the open repository — a security tool whose rules you cannot read is not one you should trust.
 
 ## License and provenance
 
 MIT. Built and maintained by [Helios IT Solutions](https://helios-it.nl), a Dutch IT service provider. Security issues: see [`SECURITY.md`](SECURITY.md).
+
+Every release is published from a tag by GitHub Actions with npm provenance, so the package on the registry is traceable to the workflow run and the commit that produced it. Check it yourself before you trust it:
+
+```bash
+npm audit signatures
+```
+
+The independent security reviews this tool was put through, and the acceptance gate they were judged against, are in [`docs/`](docs/).
