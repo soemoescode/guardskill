@@ -96,7 +96,7 @@ In CI:
 Or as an action, which pins the version for you:
 
 ```yaml
-- uses: soemoescode/guardskill@v0.4.0
+- uses: soemoescode/guardskill@v0.4.1
   with:
     fail-on: high          # critical, high, medium or low
     exclude: test/fixtures # comma-separated, optional

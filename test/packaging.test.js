@@ -35,7 +35,7 @@ const run = (file, args, opts = {}) => new Promise(resolve => {
 });
 const npm = (args, opts) => run(WIN ? 'npm.cmd' : 'npm', args, opts);
 
-let work, installed, cli;
+let work, installed, cli, contents;
 
 test('the tarball npm publish would upload contains the entry point', async t => {
   work = await mkdtemp(path.join(os.tmpdir(), 'guardskill-pack-'));
@@ -51,7 +51,7 @@ test('the tarball npm publish would upload contains the entry point', async t =>
   // `files` in package.json is a claim, the tarball is the fact.
   const listed = await run('tar', ['-tzf', tarball]);
   assert.equal(listed.code, 0, `could not list the tarball:\n${listed.stderr}`);
-  const contents = listed.stdout.split('\n').map(l => l.trim().replace(/^package\//, '')).filter(Boolean);
+  contents = listed.stdout.split('\n').map(l => l.trim().replace(/^package\//, '')).filter(Boolean);
   for (const required of ['bin/guardskill.js', 'src/cli.js', 'rules/git-exec-keys.json', 'package.json']) {
     assert.ok(contents.includes(required), `the tarball is missing ${required}:\n${contents.join('\n')}`);
   }
@@ -106,6 +106,34 @@ test('the installed binary exits 0 on a clean repository', async () => {
 
   const { code, stdout } = await run(cli, [clean, '--no-color']);
   assert.equal(code, 0, `a clean scan through the installed binary must exit 0:\n${stdout}`);
+});
+
+test('the tarball ships nothing nobody meant to ship', async () => {
+  // `files` in package.json is an allowlist of directories, so anything that
+  // lands inside one of them travels to every user. A Word owner-lock file
+  // (`~$...`) written next to a .md someone opened in Word made it into
+  // rules/ exactly this way, and would have been published inside a security
+  // tool's rule directory. `git add -A` does not know what is junk; this does.
+  assert.ok(contents, 'the pack step did not complete');
+
+  const allowedRoots = new Set(['bin', 'src', 'rules', 'package.json',
+    'SKILL.md', 'README.md', 'SECURITY.md', 'CHANGELOG.md', 'LICENSE']);
+
+  const junk = [];
+  for (const entry of contents) {
+    const [root] = entry.split('/');
+    if (!allowedRoots.has(root)) junk.push(`${entry} (unexpected top-level "${root}")`);
+    if (/(^|\/)~\$/.test(entry)) junk.push(`${entry} (editor lock file)`);
+    if (/\s/.test(entry)) junk.push(`${entry} (path contains whitespace)`);
+    if (/(^|\/)\.(DS_Store|env)/.test(entry)) junk.push(`${entry} (local artefact)`);
+  }
+  assert.deepEqual(junk, [],
+    `these files would be published to every user of this package:\n${junk.join('\n')}`);
+
+  // rules/ is read by the scanner and audited by the inventory test. Nothing
+  // else belongs in it.
+  const strayRules = contents.filter(e => e.startsWith('rules/') && !/^rules\/git-exec-keys(-inventory)?\.(json|md)$/.test(e));
+  assert.deepEqual(strayRules, [], `unexpected files in rules/: ${strayRules.join(', ')}`);
 });
 
 test.after(async () => { if (work) await rm(work, { recursive: true, force: true }); });

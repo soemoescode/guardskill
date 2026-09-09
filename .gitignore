@@ -10,3 +10,14 @@ test/fixtures/.corpus/
 test/fixtures/.contract/
 test/fixtures/.review01/
 test-output.txt
+
+# Microsoft Office owner-lock files. Opening a tracked .md in Word writes one
+# beside it, and `git add -A` picks it up; one reached rules/ and would have
+# been published inside the package.
+~$*
+.~lock.*
+
+# The Cowork outputs folder is a workspace mount, not part of this repository.
+Claude outputs/
+.DS_Store
+

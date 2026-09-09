@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.1 — 2026-09-09
+
+No detection changes. This release exists so the published entry points match what the documentation says they are.
+
+- A GitHub Action (`action.yml`), so a scan can run on every push instead of when someone remembers. Inputs are passed through the environment and read as shell variables rather than interpolated into the script, because interpolating a workflow expression into a shell line is the class of bug this tool reports. It installs the published package with `--ignore-scripts`: this action runs in other people's CI, so a lifecycle script must never execute.
+- The action is named `GuardSkill Scan`. `GuardSkill` is an existing GitHub username, and the Marketplace requires an action name that matches no existing action, user or organisation.
+- `test/action.test.js` — three tests: the action's default version must equal this package's version, inputs must never be interpolated, and `fail-on` and `version` must be validated before they reach a command line. The first of those is why this release changes two files in lockstep; forget one and the suite says so.
+- `test/packaging.test.js` gains a tarball hygiene check. A Word owner-lock file (`~$…`) written beside a `.md` someone had open was tracked by `git add -A` and would have been published inside `rules/` — a scanner's rule directory is the last place a stray editor artefact belongs. The test fails on any path in the tarball outside the intended set.
+- `.gitattributes` normalises line endings to LF in every checkout. A Windows checkout handed the new Action test CRLF, and a pattern written against `\n` then reported a file as malformed — green on Linux and macOS, red on the Windows matrix, about a file nobody had touched.
+- Issue templates for false positives and missing execution keys, both requiring the fields that make a report actionable: the rule id and what legitimately sets the key, or the git documentation reference for the key.
+- `docs/README.md`: an English index to the two independent security reviews and the acceptance gate they were judged against.
+- Published from the tag by GitHub Actions with npm provenance through OIDC. No publish credential is stored in a repository secret.
+
 ## 0.4.0 — 2026-09-08
 
 Closes all seventeen findings from the first independent security review, and the five from the second, against acceptance gates written before the work started. Detection stays at git level; a separate confidence axis and the next detection class move to 0.5.0.
