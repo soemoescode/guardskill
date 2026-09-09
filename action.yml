@@ -1,4 +1,4 @@
-name: 'GuardSkill'
+name: 'GuardSkill Scan'
 description: 'Scan a repository for git settings that let it execute code in a coding agent.'
 branding:
   icon: 'shield'
