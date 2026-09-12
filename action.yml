@@ -25,10 +25,14 @@ inputs:
     description: 'Emit machine-readable JSON instead of the human-readable report.'
     required: false
     default: 'false'
+  sarif-file:
+    description: 'Write SARIF 2.1.0 to this path, for github/codeql-action/upload-sarif. Empty means no SARIF file.'
+    required: false
+    default: ''
   version:
     description: 'GuardSkill version to run. Pin this to a fixed version.'
     required: false
-    default: '0.4.1'
+    default: '0.5.0'
 
 runs:
   using: 'composite'
@@ -41,6 +45,7 @@ runs:
         GS_EXCLUDE: ${{ inputs.exclude }}
         GS_ALLOW_INCOMPLETE: ${{ inputs.allow-incomplete }}
         GS_JSON: ${{ inputs.json }}
+        GS_SARIF_FILE: ${{ inputs.sarif-file }}
         GS_VERSION: ${{ inputs.version }}
       run: |
         # Inputs are passed through the environment and read as "$GS_..." on
@@ -72,6 +77,13 @@ runs:
 
         [ "$GS_ALLOW_INCOMPLETE" = "true" ] && args+=(--allow-incomplete)
         [ "$GS_JSON" = "true" ] && args+=(--json)
+
+        if [ -n "$GS_SARIF_FILE" ]; then
+          case "$GS_SARIF_FILE" in
+            /*|*..*) echo "guardskill: sarif-file must be a relative path inside the workspace (got: $GS_SARIF_FILE)" >&2; exit 2 ;;
+          esac
+          args+=(--sarif-out "$GS_SARIF_FILE")
+        fi
 
         # --ignore-scripts: this action installs a package into someone else's
         # CI on every run. GuardSkill has no lifecycle scripts, so the flag costs

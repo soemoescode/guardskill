@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.5.0 — 2026-09-12
+
+Two additions, and they belong in one release: a second detection class, and the place where its findings become visible.
+
+**A second detection class: agent settings**
+
+- `.mcp.json` anywhere in the tree, plus `.claude/settings.json` and `settings.local.json`, `.vscode/mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json` and `.windsurf/mcp.json`. Every file name is listed in `rules/agent-settings-inventory.md`, with the same drift test the git class has: a rule that is not in the inventory, or an inventory entry naming a rule that does not exist, fails the suite.
+- Why this class and not another git key: the git vectors need the repository to arrive as files, because a clone does not carry `.git/config`. A `.mcp.json` is an ordinary tracked file and arrives with `git clone` like any other. That is a much larger population.
+- Checked inside them: MCP servers that start a program, hooks that run a command on an agent event, permission modes that switch off the approval step, wildcards in an allow list, credential-shaped values, and remote servers declared without credential material.
+- **Severity follows what the command names**, the same rule the git class settled on after the first review. A server started from PATH — `npx`, `uvx`, `node`, `docker` — is informational, because that is how most MCP servers are configured and a scanner that fails the build on all of them gets uninstalled. A path inside the tree is high. A shell, a download-and-run, or `/tmp` and hidden directories are critical. If your own project ships its own MCP server, that entry is reported at high; the README says so and tells you what to do about it.
+- **What is deliberately not checked**: whether a remote MCP server actually requires authentication. That is only answerable by connecting to it, and the no-network promise is worth more than the check. `mcp-remote-no-auth` reports what the file declares and says so in its own text — with a test that fails if that wording disappears.
+- Both classes are found in a single walk of the tree. The second class costs no extra traversal.
+- A directory with agent settings and no git data is now a scan rather than "no git repository found". Reading a file in a tree while reporting the tree as uninspected would have been the same fail-open shape in a new place.
+
+**SARIF output**
+
+- `--sarif` writes SARIF 2.1.0 to stdout; `--sarif-out <file>` writes it alongside the readable report rather than instead of it; the Action takes `sarif-file`. Findings then land in the repository's Security tab with file, line and a per-finding status, instead of a red cross that says only "something".
+- The severity mapping is stated rather than guessed: critical and high become `error`, medium `warning`, low `note`. `security-severity` — the number GitHub sorts on — is derived from those same four levels. GuardSkill computes no CVSS score, and filling that field from one would be a claim it cannot support.
+- An incomplete scan travels into SARIF as a tool notification on the run. A Security tab that shows nothing about a tree half of which was never opened would be exiting 0 on it, one surface further out.
+- Each result carries a fingerprint, so GitHub can tell the same finding from a new one between runs.
+
+**Documentation**
+
+- The README now names the second delivery route explicitly, and cites one external measurement for how carefully MCP servers get configured in practice — Bloomberry's February 2026 sample of 1,412 company-hosted servers, 38.7% with no authentication — with the sample stated, because those are public endpoints rather than the definitions in your repository.
+- It also says, once and in the framing rather than in any finding, that the gap between discovery and use is closing as both get automated. There is deliberately no time-to-exploit claim attached to individual findings: that would be the first claim in this project without a test behind it, and it is not knowable per finding.
+
 ## 0.4.1 — 2026-09-09
 
 No detection changes. This release exists so the published entry points match what the documentation says they are.

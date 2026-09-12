@@ -1,6 +1,6 @@
 {
   "name": "guardskill",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Read-only scanner for the git settings that let a repository run code in a coding agent (Claude Code, Codex, Cursor, Copilot, Goose): fsmonitor, filters, hooks, aliases, includes, bare repositories in the tree. No dependencies, no network.",
   "type": "module",
   "bin": {

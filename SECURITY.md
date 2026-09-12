@@ -12,6 +12,7 @@ GuardSkill runs on directories that are, by assumption, hostile. Everything it r
 
 - **It only reads the project it inspects.** No file there is created, modified or deleted. The only file it writes is the report you ask for by name with `--out`.
 - **It never executes anything it finds.** Values from config and hook scripts are treated as text: printed as evidence, never run, never passed to a shell.
+- **It never asks a server anything.** The agent-settings class reports remote MCP servers that declare no credential material. That is a statement about the file, not about the server: no connection is made, and the finding says so in its own words. Whether an endpoint really requires authentication is a question this tool deliberately cannot answer.
 - **The directory walk does not follow symlinks, and neither does config reading.** A config file that is a symlink, or whose resolved path leaves the scanned tree, is refused, reported, and marks the scan INCOMPLETE. The file is not read, so a delivered directory cannot point the scanner at `~/.gitconfig` and have its contents printed.
 - **No network access.** No outbound connections, no telemetry. Identical behaviour offline.
 - **No dependencies.** Nothing is installed alongside it.
@@ -50,6 +51,13 @@ Every behavioural claim in the README, this file, `SKILL.md` and the project pag
 | `status` reports what was found; the exit code reports what was asked | README | `status reports what was found; the exit code reports what was asked (N-4)` |
 | A `--json` run answers in JSON when it fails as well | README | `--json answers in JSON when it fails, too` |
 | A config that cannot be read is reported, never counted as clean | README, SECURITY | `an unreadable config is reported, not silently treated as clean` |
+| The agent-settings class never connects to anything, including for the remote-server check | README, SECURITY | `the agent class never reaches the network`, `the remote-server check reports what the file declares and says it did not connect` |
+| An MCP server started from PATH stays informational; a shell, a temporary path or a download-and-run is critical | README, inventory | `severity follows what the command names, not that a server exists`, `an ordinary MCP configuration never fails a default build` |
+| Only the documented agent settings file names are read | inventory | `only the documented file names are read` |
+| The agent rule set matches its published inventory | README | `every agent rule appears in the inventory, and the reverse` |
+| An agent settings file that cannot be parsed is reported, never counted as clean | README | `an agent settings file that cannot be parsed is reported, never counted as clean` |
+| SARIF `security-severity` is derived from GuardSkill's own severity, not from an invented CVSS score | README | `security-severity follows our severity, and is not invented` |
+| An incomplete scan is visible in SARIF as well as in the exit code | README | `an incomplete scan stays visible in SARIF` |
 
 ## Accepted residual risk
 
@@ -57,5 +65,7 @@ These are known and deliberately not closed in 0.4.0. They are listed here becau
 
 - **Four executing config keys are out of scope**: `sendemail.smtpServer`, `instaweb.httpd`, `ssh.variant` and the HTTP proxy settings. Reasons per key in `rules/git-exec-keys-inventory.md`. Each is reachable only through a command a coding agent does not run, or names something other than a program.
 - **The real-world corpus is reconstructed, not cloned.** The five fixtures reproduce shapes observed in an independent review, not verified checkouts pinned by commit SHA. See `test/corpus/PROVENANCE.md`. A reconstruction cannot surprise you the way a real checkout can.
-- **Detection stops at git level.** `.claude/settings.json`, `.vscode/tasks.json`, MCP server definitions and npm lifecycle scripts are not inspected. The README says so, and that stays true until the next class ships.
+- **Detection stops at git configuration and agent settings.** `.vscode/tasks.json`, CI workflow definitions, npm lifecycle scripts and TOML-based agent settings are not inspected, each with a reason in `rules/agent-settings-inventory.md`. Naming them keeps the gap a decision rather than an oversight.
+- **The remote MCP check is a declaration, not a probe.** `mcp-remote-no-auth` reports that a server entry carries no credential material in the file. A server that requires authentication but is configured elsewhere will still be reported, and a server that declares a header but accepts unauthenticated requests will not be. Answering it properly means connecting, and the no-network promise is worth more than this check.
+- **Agent settings in TOML are not inspected.** `.codex/config.toml` and anything else in that format needs a TOML parser, and a scanner with no dependencies is not taking one on for a single format. Listed in `rules/agent-settings-inventory.md` with the other out-of-scope entries.
 - **One parser deviation remains, on valueless keys.** `key` with no `=` is treated as the string `true`, because a rule has to evaluate something; git treats it as boolean true. Every other case in the golden table now matches `git config --file` byte for byte. Listed with reasons in `test/golden.test.js`.

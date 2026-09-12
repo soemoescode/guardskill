@@ -5,7 +5,7 @@ import { writeFile, stat } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { loadRules, scan, statusOf, exitCodeFor } from './scanners/gitconfig.js';
-import { formatText, formatMarkdown, formatJson } from './report/formatter.js';
+import { formatText, formatMarkdown, formatJson, formatSarif } from './report/formatter.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RULES_PATH = path.join(__dirname, '..', 'rules', 'git-exec-keys.json');
@@ -30,6 +30,8 @@ Usage
 
 Options
   --json                 machine-readable output
+  --sarif                SARIF 2.1.0 on stdout, for a code-scanning upload
+  --sarif-out <file>     also write SARIF to <file>, alongside the readable report
   --out <file>           also write a Markdown report to <file>
   --fail-on <severity>   report FINDINGS from this severity up (default: high)
   --allow-incomplete     do not fail when part of the tree could not be inspected
@@ -45,8 +47,9 @@ Exit codes
   2  ERROR       the scan could not run: bad path, bad options, invalid ruleset
   3  INCOMPLETE  part of the tree was not inspected; use --allow-incomplete to accept that
 
-GuardSkill only reads the project it inspects. The only file it writes is the
-report you ask for with --out. It never executes anything it finds.`;
+GuardSkill only reads the project it inspects. The only files it writes are the
+reports you ask for with --out and --sarif-out. It never executes anything it
+finds.`;
 
 class UsageError extends Error {}
 
@@ -63,13 +66,15 @@ export const wantsJson = () => jsonRequested;
 
 export function parseArgs(argv) {
   const args = {
-    target: null, out: null, json: false, failOn: 'high',
+    target: null, out: null, json: false, sarif: false, sarifOut: null, failOn: 'high',
     maxDepth: DEFAULT_MAX_DEPTH, color: true, exclude: [], allowIncomplete: false,
   };
   const rest = argv[0] === 'scan' ? argv.slice(1) : argv;
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (a === '--json') args.json = true;
+    else if (a === '--sarif') args.sarif = true;
+    else if (a === '--sarif-out') args.sarifOut = rest[++i];
     else if (a === '--no-color') args.color = false;
     else if (a === '--allow-incomplete') args.allowIncomplete = true;
     else if (a === '--out' || a === '-o') args.out = rest[++i];
@@ -84,6 +89,8 @@ export function parseArgs(argv) {
   if (!SEVERITIES.includes(args.failOn)) throw new UsageError(`--fail-on must be one of ${SEVERITIES.join(', ')}`);
   if (!Number.isInteger(args.maxDepth) || args.maxDepth < 0) throw new UsageError('--max-depth must be a non-negative integer');
   if (args.out === undefined) throw new UsageError('--out needs a file name');
+  if (args.sarifOut === undefined) throw new UsageError('--sarif-out needs a file name');
+  if (args.json && args.sarif) throw new UsageError('--json and --sarif both write to stdout; pick one, or use --sarif-out');
   return args;
 }
 
@@ -112,7 +119,13 @@ export async function run() {
   const code = exitCodeFor(result, args.failOn, args.allowIncomplete);
 
   if (args.json) console.log(formatJson(result, VERSION, status));
+  else if (args.sarif) console.log(formatSarif(result, VERSION));
   else console.log(formatText(result, { color: args.color && process.stdout.isTTY }));
+
+  if (args.sarifOut) {
+    await writeFile(args.sarifOut, formatSarif(result, VERSION), 'utf-8');
+    if (!args.json && !args.sarif) console.log(`\nSARIF report written to ${args.sarifOut}`);
+  }
 
   if (args.out) {
     await writeFile(args.out, formatMarkdown(result), 'utf-8');

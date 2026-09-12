@@ -20,6 +20,14 @@ npx guardskill <path>          # human-readable
 npx guardskill <path> --json   # to parse the result
 ```
 
+GuardSkill checks two classes. **Git configuration** — the keys that make git run a
+program — reaches you only when a repository arrives as files, because a clone does
+not carry `.git/config`. **Agent settings** — `.mcp.json`, `.claude/settings.json`,
+`.vscode/mcp.json` and their siblings — arrive with an ordinary `git clone`, and a
+coding agent reads them when it opens the project.
+
+Add `--sarif-out results.sarif` in CI to send the findings to GitHub code scanning.
+
 ## Reading the result
 
 The exit code is the summary:

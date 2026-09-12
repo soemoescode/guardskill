@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { parseGitConfig } from '../gitconfig-parser.js';
 import { discoverGitTargets, configFilesFor, safeToRead } from '../discovery.js';
+import { scanAgentSettings } from './agentsettings.js';
 
 const SEVERITIES = ['critical', 'high', 'medium', 'low'];
 const MATCH_TYPES = new Set([
@@ -15,6 +16,13 @@ const MAX_CONFIG_BYTES = 4 * 1024 * 1024;
 const MAX_EVIDENCE_CHARS = 200;
 const HEAD_BYTES = 4096;
 const MAX_INCLUDE_DEPTH = 10;
+const AGENT_MATCH_TYPES = new Set([
+  'command-shell', 'command-in-tree', 'remote-exec', 'args-in-tree',
+  'remote-server-auth', 'agent-hooks', 'permission-bypass', 'permission-wildcard',
+  'command-suspicious-path',
+  'credential-shape',
+]);
+const AGENT_RULES_FILE = 'agent-settings-keys.json';
 
 class RulesetError extends Error {}
 
@@ -70,7 +78,57 @@ export async function loadRules(rulesPath) {
     });
   }
 
-  return { ...raw, compiled, structuralById: Object.fromEntries(raw.structural.map(r => [r.id, r])) };
+  const agent = await loadAgentRules(path.join(path.dirname(rulesPath), AGENT_RULES_FILE));
+
+  return { ...raw, compiled, agent, structuralById: Object.fromEntries(raw.structural.map(r => [r.id, r])) };
+}
+
+/**
+ * The second detection class has its own ruleset file, validated the same way and
+ * at the same moment. Required, not optional: a scanner that quietly skips half
+ * its checks because a file is missing is the fail-open shape this project keeps
+ * closing.
+ */
+export async function loadAgentRules(rulesPath) {
+  let raw;
+  try {
+    raw = JSON.parse(await readFile(rulesPath, 'utf-8'));
+  } catch (err) {
+    throw new RulesetError(`agent ruleset ${rulesPath} could not be parsed: ${err.message}`);
+  }
+  if (!Array.isArray(raw.rules)) throw new RulesetError('agent ruleset: "rules" must be an array');
+  if (!Array.isArray(raw.structural)) throw new RulesetError('agent ruleset: "structural" must be an array');
+  if (!Array.isArray(raw.files)) throw new RulesetError('agent ruleset: "files" must be an array');
+
+  for (const rule of [...raw.rules, ...raw.structural]) {
+    const where = `agent rule "${rule.id ?? '(no id)'}"`;
+    for (const f of ['id', 'title', 'explanation']) {
+      if (!rule[f]) throw new RulesetError(`${where}: missing required field "${f}"`);
+    }
+    for (const key of ['severity', 'baseSeverity', 'escalatedSeverity']) {
+      if (rule[key] !== undefined && !SEVERITIES.includes(rule[key])) {
+        throw new RulesetError(`${where}: ${key} "${rule[key]}" is not one of ${SEVERITIES.join(', ')}`);
+      }
+    }
+  }
+  for (const rule of raw.rules) {
+    if (!AGENT_MATCH_TYPES.has(rule.matchType)) {
+      throw new RulesetError(`agent rule "${rule.id}": unknown matchType "${rule.matchType}"`);
+    }
+  }
+
+  const compiled = {};
+  for (const field of ['remoteExecIndicators', 'credentialValuePatterns', 'wildcardAllowPatterns', 'suspiciousPathIndicators']) {
+    compiled[field] = (raw[field] ?? []).map(pattern => {
+      try {
+        return new RegExp(pattern, field === 'wildcardAllowPatterns' ? '' : 'i');
+      } catch (err) {
+        throw new RulesetError(`agent ${field}: pattern ${JSON.stringify(pattern)} is not a valid regular expression (${err.message})`);
+      }
+    });
+  }
+
+  return { ...raw, compiled, byId: Object.fromEntries([...raw.rules, ...raw.structural].map(r => [r.id, r])) };
 }
 
 // ---------------------------------------------------------------- value helpers
@@ -545,7 +603,7 @@ const worstOf = list => SEVERITIES.find(s => list.some(f => f.severity === s));
  * Scan a directory tree. Read-only: nothing is written, nothing is executed.
  */
 export async function scan(rootPath, ruleset, opts = {}) {
-  const { targets, truncated, dirsVisited, caseInsensitive, caseVariants } =
+  const { targets, truncated, dirsVisited, caseInsensitive, caseVariants, agentFiles } =
     await discoverGitTargets(rootPath, opts);
 
   const ctx = { ruleset, root: rootPath, incomplete: new Set(), visited: new Set() };
@@ -605,6 +663,11 @@ export async function scan(rootPath, ruleset, opts = {}) {
     findings.push(...own);
   }
 
+  // Second class. Same walk, same INCOMPLETE list, same finding shape.
+  if (ruleset.agent && agentFiles.length) {
+    findings.push(...await scanAgentSettings(rootPath, agentFiles, ruleset.agent, ctx.incomplete));
+  }
+
   const seen = new Set();
   const deduped = findings.filter(f => {
     const key = `${f.ruleId}|${f.location}|${f.evidence}`;
@@ -616,9 +679,11 @@ export async function scan(rootPath, ruleset, opts = {}) {
   const incompleteReasons = [...ctx.incomplete];
   return {
     rootPath,
-    scanned: targets.length > 0,
-    reason: targets.length === 0 ? 'no git repository or git directory found under this path' : undefined,
+    scanned: targets.length > 0 || agentFiles.length > 0,
+    reason: targets.length === 0 && agentFiles.length === 0
+      ? 'no git repository, git directory or agent settings file found under this path' : undefined,
     targetCount: targets.length,
+    agentFileCount: agentFiles.length,
     dirsVisited,
     truncated,
     caseInsensitive,

@@ -1,0 +1,251 @@
+{
+  "_note": [
+    "Agent settings that a repository can ship, and that make a coding agent run a",
+    "program or hand out access when it opens the project.",
+    "",
+    "Unlike the git-level vectors, these files travel with an ordinary `git clone`:",
+    "no zip, no shared drive, no USB stick required. That is why they are here.",
+    "",
+    "Every id in this file must appear in rules/agent-settings-inventory.md, and a",
+    "test fails when the two drift apart.",
+    "",
+    "Severity follows what the value names, not which key it is. A command resolved",
+    "from PATH is the structural medium; a path inside the tree is high; a shell, a",
+    "download-and-run, or a temporary or hidden location is critical."
+  ],
+  "_schema": "guardskill-agent-rules/1",
+  "files": [
+    {
+      "match": ".mcp.json",
+      "where": "any directory",
+      "reads": "Claude Code, and the de-facto project-scoped MCP file"
+    },
+    {
+      "match": ".claude/settings.json",
+      "where": "under a .claude directory",
+      "reads": "Claude Code project settings"
+    },
+    {
+      "match": ".claude/settings.local.json",
+      "where": "under a .claude directory",
+      "reads": "Claude Code local settings; normally gitignored, so its presence in a delivered tree is itself worth a look"
+    },
+    {
+      "match": ".vscode/mcp.json",
+      "where": "under a .vscode directory",
+      "reads": "Visual Studio Code MCP servers"
+    },
+    {
+      "match": ".cursor/mcp.json",
+      "where": "under a .cursor directory",
+      "reads": "Cursor MCP servers"
+    },
+    {
+      "match": ".gemini/settings.json",
+      "where": "under a .gemini directory",
+      "reads": "Gemini CLI settings"
+    },
+    {
+      "match": ".windsurf/mcp.json",
+      "where": "under a .windsurf directory",
+      "reads": "Windsurf MCP servers"
+    }
+  ],
+  "structural": [
+    {
+      "id": "mcp-server-defined",
+      "baseSeverity": "low",
+      "escalatedSeverity": "critical",
+      "severity": "low",
+      "title": "Repository defines an MCP server",
+      "explanation": "This file, shipped inside the repository, tells a coding agent to start a program as an MCP server. The command comes from PATH and nothing about it stands out, so this is informational: it is how most MCP servers are configured. It is listed because a scan should tell you what a repository asks your agent to run, even when the answer is ordinary.",
+      "remediation": "Read the command and its arguments before opening this project with an agent, and decide whether you want that program running."
+    },
+    {
+      "id": "agent-config-unparsable",
+      "severity": "medium",
+      "title": "Agent settings file could not be parsed",
+      "explanation": "This file is in a location an agent reads, but it is not valid JSON, so nothing in it has been checked. This scan says nothing about its contents.",
+      "remediation": "Open the file yourself before running an agent here."
+    },
+    {
+      "id": "agent-config-too-large",
+      "severity": "medium",
+      "title": "Agent settings file too large to parse",
+      "explanation": "GuardSkill refuses to parse a settings file of this size, so it was not inspected. A settings file that large is itself unusual.",
+      "remediation": "Open the file and look at it yourself before running an agent here."
+    },
+    {
+      "id": "agent-local-settings-shipped",
+      "severity": "low",
+      "title": "Local agent settings shipped with the repository",
+      "explanation": "A `settings.local.json` is meant to stay on one machine and is normally gitignored. Finding one in a delivered tree means someone's local agent configuration came along with the project.",
+      "remediation": "Check whether it should be there, and whether it contains anything personal."
+    }
+  ],
+  "rules": [
+    {
+      "id": "mcp-command-shell",
+      "matchType": "command-shell",
+      "severity": "critical",
+      "title": "MCP server starts a shell",
+      "explanation": "The command for this server is a shell, so the arguments are an arbitrary command line rather than a program with a fixed meaning. An agent starts its MCP servers when it opens the project, which makes this a command that runs before you have typed anything.",
+      "remediation": "Read the arguments. Do not open this project with an agent until you have."
+    },
+    {
+      "id": "mcp-command-in-repo",
+      "matchType": "command-in-tree",
+      "severity": "high",
+      "title": "MCP server runs a program that came with the repository",
+      "explanation": "The command names a path inside the scanned tree, so whoever wrote the repository chose both the configuration and the program it starts. That is ordinary in a project that ships its own MCP server, and it is the whole attack in a project you were handed - GuardSkill cannot tell those apart, so it reports and lets you decide.",
+      "remediation": "Read that file. If this is your own project, lower the threshold or exclude the path."
+    },
+    {
+      "id": "mcp-fetches-remote-code",
+      "matchType": "remote-exec",
+      "severity": "critical",
+      "title": "MCP server command downloads code and runs it",
+      "explanation": "The command or its arguments fetch something over the network and execute it. That is a download-and-run, performed by your agent, with your privileges.",
+      "remediation": "Do not open this project with an agent. Inspect the URL first."
+    },
+    {
+      "id": "mcp-args-point-into-repo",
+      "matchType": "args-in-tree",
+      "severity": "high",
+      "title": "MCP server arguments point into the repository",
+      "explanation": "The program itself comes from PATH, but the script or module it is told to load came with the repository. Ordinary when a project ships its own server; the whole attack when the project was handed to you.",
+      "remediation": "Read the file named in the arguments. If this is your own project, lower the threshold or exclude the path."
+    },
+    {
+      "id": "mcp-remote-no-auth",
+      "matchType": "remote-server-auth",
+      "severity": "medium",
+      "title": "Remote MCP server declared without any authentication material",
+      "explanation": "This entry points an agent at a remote MCP server and carries no header, token or environment variable that looks like a credential. This is an observation about the configuration in this file - GuardSkill makes no network connections, so it has not asked the server whether it requires authentication.",
+      "remediation": "Check who operates that endpoint and whether it should be authenticated."
+    },
+    {
+      "id": "agent-hook-command",
+      "matchType": "agent-hooks",
+      "severity": "high",
+      "title": "Agent settings define a hook that runs a command",
+      "explanation": "Hooks run on agent events - a tool call, a file edit, a session start - without a separate prompt. A hook shipped with a repository runs on your machine on the repository's terms.",
+      "remediation": "Read every hook command before opening this project with an agent."
+    },
+    {
+      "id": "agent-permission-bypass",
+      "matchType": "permission-bypass",
+      "severity": "critical",
+      "title": "Agent settings switch off the approval step",
+      "explanation": "This file asks the agent to stop asking. A repository that ships a setting like this is choosing, on your behalf, that its own contents need no confirmation.",
+      "remediation": "Remove the setting, or do not open this project with an agent."
+    },
+    {
+      "id": "agent-permission-wildcard",
+      "matchType": "permission-wildcard",
+      "severity": "high",
+      "title": "Agent settings pre-approve a whole tool or command class",
+      "explanation": "A wildcard in the allow list grants every use of that tool in advance, including uses the repository suggests to the agent later.",
+      "remediation": "Narrow the entry to the specific commands the project actually needs."
+    },
+    {
+      "id": "agent-secret-in-config",
+      "matchType": "credential-shape",
+      "severity": "high",
+      "title": "Credential-shaped value in an agent settings file",
+      "explanation": "A value here matches the shape of an API key or token. If this file is in version control, so is the credential.",
+      "remediation": "Rotate it, then move it to an environment variable that is not committed."
+    },
+    {
+      "id": "mcp-command-suspicious-path",
+      "matchType": "command-suspicious-path",
+      "severity": "critical",
+      "title": "MCP server runs a program from a temporary or hidden location",
+      "explanation": "The command points at a world-writable or hidden directory. Legitimate tooling is not installed there; this is where a payload is staged so it does not show up in a file listing.",
+      "remediation": "Do not open this project with an agent. Inspect that path first."
+    }
+  ],
+  "shellCommands": [
+    "sh",
+    "bash",
+    "zsh",
+    "ksh",
+    "dash",
+    "fish",
+    "cmd",
+    "cmd.exe",
+    "powershell",
+    "powershell.exe",
+    "pwsh",
+    "wsl",
+    "env",
+    "eval"
+  ],
+  "interpreterCommands": [],
+  "remoteExecIndicators": [
+    "curl\\s",
+    "wget\\s",
+    "Invoke-WebRequest",
+    "Invoke-Expression",
+    "\\biwr\\b",
+    "\\biex\\b",
+    "certutil\\s+-urlcache",
+    "bitsadmin",
+    "mshta",
+    "base64\\s+-d",
+    "\\|\\s*(sh|bash|zsh)\\b",
+    "https?://[^\\s\"']+\\.(sh|ps1|py|rb|pl|exe|bat|cmd)\\b"
+  ],
+  "authHeaderNames": [
+    "authorization",
+    "x-api-key",
+    "api-key",
+    "x-auth-token",
+    "token",
+    "bearer",
+    "cookie"
+  ],
+  "credentialKeyNames": [
+    "token",
+    "secret",
+    "password",
+    "passwd",
+    "apikey",
+    "api_key",
+    "access_key",
+    "private_key",
+    "credential"
+  ],
+  "credentialValuePatterns": [
+    "^sk-[A-Za-z0-9_-]{16,}$",
+    "^ghp_[A-Za-z0-9]{30,}$",
+    "^github_pat_[A-Za-z0-9_]{40,}$",
+    "^xox[baprs]-[A-Za-z0-9-]{10,}$",
+    "^AKIA[0-9A-Z]{16}$",
+    "^AIza[0-9A-Za-z_-]{30,}$",
+    "^glpat-[A-Za-z0-9_-]{16,}$"
+  ],
+  "bypassModes": [
+    "bypasspermissions",
+    "bypass",
+    "yolo",
+    "dangerously-skip-permissions",
+    "acceptedits"
+  ],
+  "wildcardAllowPatterns": [
+    "^\\*$",
+    "^Bash\\(\\*\\)$",
+    "^Bash$",
+    "^[A-Za-z]+\\(\\*\\)$",
+    "^.*:\\*$"
+  ],
+  "suspiciousPathIndicators": [
+    "^/tmp/",
+    "^/var/tmp/",
+    "^/dev/shm/",
+    "\\\\Temp\\\\",
+    "/\\\\.[A-Za-z0-9_-]+/",
+    "^~?/\\\\.",
+    "AppData\\\\\\\\Local\\\\\\\\Temp"
+  ]
+}

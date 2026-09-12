@@ -21,9 +21,19 @@ Two pieces of public research make this concrete:
 
 The recommended user-side mitigation in both write-ups is the same: **inspect the git configuration before you open the directory with an agent.** That is tedious to do by hand across a tree. This tool does it in a second.
 
+### And a second route, which needs no zip at all
+
+The git vectors have one saving grace: the repository has to arrive as files, because a clone does not carry `.git/config`. Agent settings have no such requirement. A `.mcp.json`, a `.claude/settings.json` or a `.vscode/mcp.json` is an ordinary tracked file — it **arrives with `git clone` like any other** — and a coding agent reads it when it opens the project. An MCP server entry names a program and the agent starts it; a hook names a command and the agent runs it on an event; a permission setting can switch off the step where the agent asks you first.
+
+How carefully these are configured in practice is worth one external number. Bloomberry measured 1,412 company-hosted MCP servers in February 2026 and found **38.7% with no authentication at all**, up from 425 servers six months earlier. Those are public endpoints rather than the server definitions in your repository — a different population — but it is the same ecosystem, and it says something about how much care these configurations get. ([Bloomberry](https://bloomberry.com/blog/we-analyzed-1400-mcp-servers-heres-what-we-learned/))
+
+One more thing worth saying plainly, without putting a number on it: the gap between "someone finds this" and "someone uses this" is closing, because the finding and the using are increasingly done by the same automated machinery. That is a reason to look before you open a directory, not a reason to panic about any particular line in a report — which is why GuardSkill does not attach a time-to-exploit claim to individual findings. It cannot know.
+
 ## Where it looks
 
 Every git configuration an agent could pick up, not only the obvious one: the project's own `.git`, any nested `.git` that arrived as content, any bare repository hidden in a subdirectory, the `.git` *file* a submodule or linked worktree leaves behind, `config.worktree`, every `.git/modules/<name>/config`, and any file pulled in through `include.path` that lies inside the tree.
+
+And the agent settings files a repository can ship: `.mcp.json` anywhere in the tree, `.claude/settings.json` and `settings.local.json`, `.vscode/mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json`, `.windsurf/mcp.json`. Both classes are found in one walk of the directory tree; the second one costs nothing extra.
 
 ## What it checks
 
@@ -42,6 +52,25 @@ The full list, key by key, with a source and a coverage status for each, is in [
 
 Four keys are deliberately **out of scope**, each with a reason in the inventory: `sendemail.smtpServer`, `instaweb.httpd`, `ssh.variant` and the HTTP proxy settings. That is why this README lists what it checks instead of claiming to cover a whole vulnerability class — a claim would only be true when that column is empty.
 
+### Agent settings
+
+The second class, with its own inventory in [`rules/agent-settings-inventory.md`](rules/agent-settings-inventory.md) and the same drift test behind it.
+
+| Check | Severity |
+|---|---|
+| An MCP server started from PATH (`npx`, `uvx`, `node`, `docker`) | **low** — informational. This is how most MCP servers are configured |
+| The command is a path inside the tree, or an argument names a file inside it | **high** |
+| The command is a shell, downloads and runs code, or lives in `/tmp` or a hidden directory | **critical** |
+| A remote server declared with no credential material in `headers` or `env` | **medium** |
+| A hook that runs a command on an agent event | **high** |
+| A permission mode that skips the approval step (`bypassPermissions`, …) | **critical** |
+| A wildcard in `permissions.allow` | **high** |
+| A credential-shaped value | **high** |
+
+**If your own project ships its own MCP server**, that entry is reported at high — GuardSkill cannot tell a repository you wrote from one you were handed. Use `--fail-on critical`, or `--exclude` the path.
+
+**What is deliberately not checked:** whether a remote MCP server *actually* requires authentication. That is only answerable by connecting to it, and this tool makes no network connections. The `mcp-remote-no-auth` finding reports what the file declares, and says so in its own text.
+
 ## Usage
 
 ```bash
@@ -52,6 +81,7 @@ npx guardskill . --out report.md        # also write a Markdown report
 npx guardskill . --fail-on critical     # only fail the build on critical findings
 npx guardskill . --allow-incomplete     # accept a partial walk
 npx guardskill . --exclude test/fixtures
+npx guardskill . --sarif-out results.sarif     # for GitHub code scanning
 ```
 
 Or install it once: `npm install -g guardskill`, then `guardskill .`.
@@ -96,11 +126,29 @@ In CI:
 Or as an action, which pins the version for you:
 
 ```yaml
-- uses: soemoescode/guardskill@v0.4.1
+- uses: soemoescode/guardskill@v0.5.0
   with:
     fail-on: high          # critical, high, medium or low
     exclude: test/fixtures # comma-separated, optional
 ```
+
+### Into the Security tab
+
+With SARIF, findings stop being a red cross and become rows in the repository's own code-scanning view, with the file, the line, and a status per finding:
+
+```yaml
+- uses: soemoescode/guardskill@v0.5.0
+  with:
+    sarif-file: guardskill.sarif
+    fail-on: critical            # let the Security tab carry the rest
+  continue-on-error: true
+
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: guardskill.sarif
+```
+
+`--sarif` writes the same document to stdout, and `--sarif-out <file>` writes it alongside the readable report rather than instead of it. The severity mapping is stated rather than guessed: critical and high become `error`, medium `warning`, low `note`, and `security-severity` — the number GitHub sorts on — is derived from those same four levels. GuardSkill computes no CVSS score, and filling that field from one would be a claim it cannot support. An incomplete scan travels too, as a tool notification on the run: a Security tab that quietly shows nothing about a tree half of which was never opened would be the same failure as exiting 0 on it.
 
 The JSON output carries `schemaVersion: 1`. Fields will be added within version 1; existing ones will not change meaning.
 
@@ -168,7 +216,7 @@ New detection rules go in `rules/git-exec-keys.json` and must be listed in `rule
 
 ## Roadmap
 
-A separate confidence axis alongside severity is planned for 0.5.0, together with the next detection class: the agent's own settings files — `.claude/settings.json`, `.mcp.json` and comparable MCP server definitions — which reach the same outcome by a different route, and unlike the git-level vectors they travel with an ordinary `git clone`. Continuous monitoring, Slack and Teams alerts and auto-fix pull requests are planned as a paid layer. The scanner stays free and MIT-licensed, and the detection rules stay in the open repository — a security tool whose rules you cannot read is not one you should trust.
+The agent-settings class and SARIF output shipped in 0.5.0. Next: a separate confidence axis alongside severity, so a finding can say how sure it is rather than only how bad it would be; TOML-based agent settings, which need a parser this project does not want to take on lightly; and the CI definitions a repository ships. Continuous monitoring, Slack and Teams alerts and auto-fix pull requests are planned as a paid layer. The scanner stays free and MIT-licensed, and the detection rules stay in the open repository — a security tool whose rules you cannot read is not one you should trust.
 
 ## License and provenance
 

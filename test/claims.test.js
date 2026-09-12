@@ -110,7 +110,7 @@ test('accepted residual risks are written down publicly', async () => {
   const security = await readFile(path.join(ROOT, 'SECURITY.md'), 'utf-8');
   assert.match(security, /## Accepted residual risk/,
     'an accepted risk that is not in the public documentation is concealed, not accepted');
-  for (const phrase of ['out of scope', 'reconstructed', 'git level']) {
+  for (const phrase of ['out of scope', 'reconstructed', 'not a probe', 'not inspected']) {
     assert.ok(security.toLowerCase().includes(phrase.toLowerCase()),
       `the residual-risk section does not mention: ${phrase}`);
   }

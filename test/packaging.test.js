@@ -132,8 +132,19 @@ test('the tarball ships nothing nobody meant to ship', async () => {
 
   // rules/ is read by the scanner and audited by the inventory test. Nothing
   // else belongs in it.
-  const strayRules = contents.filter(e => e.startsWith('rules/') && !/^rules\/git-exec-keys(-inventory)?\.(json|md)$/.test(e));
+  const shipped = new Set([
+    'rules/git-exec-keys.json', 'rules/git-exec-keys-inventory.md',
+    'rules/agent-settings-keys.json', 'rules/agent-settings-inventory.md',
+  ]);
+  const strayRules = contents.filter(e => e.startsWith('rules/') && !shipped.has(e));
   assert.deepEqual(strayRules, [], `unexpected files in rules/: ${strayRules.join(', ')}`);
+
+  // The rule files are not documentation: the scanner loads both at startup and
+  // refuses to run without them, so leaving one out of `files` would ship a
+  // package that cannot scan.
+  for (const required of shipped) {
+    assert.ok(contents.includes(required), `the tarball is missing ${required}, which the scanner loads at startup`);
+  }
 });
 
 test.after(async () => { if (work) await rm(work, { recursive: true, force: true }); });

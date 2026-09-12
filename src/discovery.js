@@ -13,6 +13,20 @@ import path from 'node:path';
 
 const ALWAYS_SKIP = new Set(['.terraform', '.venv', '__pycache__']);
 
+// Settings files a coding agent reads out of the project, collected during the
+// same walk. A second traversal to find them would double the cost of a scan for
+// no reason; the inventory that documents this list is
+// rules/agent-settings-inventory.md, and a test keeps the two in step.
+const AGENT_DIRS = new Set(['.claude', '.vscode', '.cursor', '.gemini', '.windsurf']);
+const AGENT_DIR_FILES = new Set(['mcp.json', 'settings.json', 'settings.local.json']);
+
+export function agentFileKind(fileName, parentName) {
+  if (fileName === '.mcp.json') return 'mcp';
+  if (!AGENT_DIRS.has(parentName) || !AGENT_DIR_FILES.has(fileName)) return null;
+  return fileName === 'settings.local.json' ? 'local-settings'
+    : fileName === 'mcp.json' ? 'mcp' : 'settings';
+}
+
 /** Windows ignores trailing spaces and dots in path names; git there does not see them. */
 function normaliseName(name) {
   return name.replace(/[ .]+$/, '').toLowerCase();
@@ -144,8 +158,9 @@ async function resolveGitFile(file, root) {
 }
 
 /**
- * @returns {Promise<{targets: Array, truncated: boolean, dirsVisited: number, caseInsensitive: boolean, caseVariants: Array}>}
+ * @returns {Promise<{targets: Array, truncated: boolean, dirsVisited: number, caseInsensitive: boolean, caseVariants: Array, agentFiles: Array}>}
  *   target.kind = 'root-git' | 'nested-git' | 'bare-repo' | 'linked-git'
+ *   agentFiles[].kind = 'mcp' | 'settings' | 'local-settings'
  */
 export async function discoverGitTargets(root, opts = {}) {
   const maxDepth = opts.maxDepth ?? 24;
@@ -156,6 +171,7 @@ export async function discoverGitTargets(root, opts = {}) {
 
   const targets = [];
   const caseVariants = [];
+  const agentFiles = [];
   let dirsVisited = 0;
   let truncated = false;
 
@@ -184,6 +200,11 @@ export async function discoverGitTargets(root, opts = {}) {
       const full = path.join(dir, entry.name);
       const rel = (path.relative(root, full) || '.').split(path.sep).join('/');
       if (isExcluded(rel)) continue;
+
+      if (entry.isFile()) {
+        const kind = agentFileKind(entry.name, path.basename(dir));
+        if (kind) agentFiles.push({ file: full, relPath: rel, kind });
+      }
 
       if (entry.isFile() && looksLikeGitName(entry.name)) {
         const target = await resolveGitFile(full, root);
@@ -221,5 +242,5 @@ export async function discoverGitTargets(root, opts = {}) {
     }
   }
 
-  return { targets, truncated, dirsVisited, caseInsensitive, caseVariants };
+  return { targets, truncated, dirsVisited, caseInsensitive, caseVariants, agentFiles };
 }
