@@ -81,6 +81,13 @@
       "title": "Local agent settings shipped with the repository",
       "explanation": "A `settings.local.json` is meant to stay on one machine and is normally gitignored. Finding one in a delivered tree means someone's local agent configuration came along with the project.",
       "remediation": "Check whether it should be there, and whether it contains anything personal."
+    },
+    {
+      "id": "agent-config-too-deep",
+      "severity": "medium",
+      "title": "Agent settings file nested beyond the inspection limit",
+      "explanation": "This file nests deeper than GuardSkill walks, so the part below the limit was not inspected. A settings file nested that deeply is itself unusual, and a file shaped to exhaust a scanner is a way to make it say nothing about everything else.",
+      "remediation": "Open the file yourself before running an agent here."
     }
   ],
   "rules": [
@@ -127,18 +134,20 @@
     {
       "id": "agent-hook-command",
       "matchType": "agent-hooks",
-      "severity": "high",
+      "severity": "low",
       "title": "Agent settings define a hook that runs a command",
-      "explanation": "Hooks run on agent events - a tool call, a file edit, a session start - without a separate prompt. A hook shipped with a repository runs on your machine on the repository's terms.",
-      "remediation": "Read every hook command before opening this project with an agent."
+      "explanation": "Hooks run on agent events - a tool call, a file edit, a session start - without a separate prompt. Severity follows what the command names, the same way it does for an MCP server: a formatter or linter from PATH is informational, a script that came with the repository is high, and a shell pipeline, a download-and-run or a temporary location is critical.",
+      "remediation": "Read the hook command. A hook that runs a tool from PATH on your own project is ordinary.",
+      "baseSeverity": "low",
+      "escalatedSeverity": "critical"
     },
     {
       "id": "agent-permission-bypass",
       "matchType": "permission-bypass",
-      "severity": "critical",
-      "title": "Agent settings switch off the approval step",
-      "explanation": "This file asks the agent to stop asking. A repository that ships a setting like this is choosing, on your behalf, that its own contents need no confirmation.",
-      "remediation": "Remove the setting, or do not open this project with an agent."
+      "severity": "high",
+      "title": "Agent settings ask for the approval step to be skipped",
+      "explanation": "This file asks the agent to stop asking before it acts. Claude Code ignores `bypassPermissions` when it comes from .claude/settings.json or settings.local.json and starts the session in Manual mode instead, so in that client the request does not take effect - but other agents read the same shapes and need not be so careful, and a repository that ships this is choosing on your behalf that its own contents need no confirmation. That intent is the finding.",
+      "remediation": "Remove the setting. If you did not write this repository, treat the request itself as the signal."
     },
     {
       "id": "agent-permission-wildcard",
@@ -163,6 +172,14 @@
       "title": "MCP server runs a program from a temporary or hidden location",
       "explanation": "The command points at a world-writable or hidden directory. Legitimate tooling is not installed there; this is where a payload is staged so it does not show up in a file listing.",
       "remediation": "Do not open this project with an agent. Inspect that path first."
+    },
+    {
+      "id": "mcp-server-shape-unknown",
+      "matchType": "shape-unknown",
+      "severity": "medium",
+      "title": "MCP server entry in a shape this scanner does not recognise",
+      "explanation": "This entry defines a server, but not through a `command` or a `url` that GuardSkill knows how to read. MCP configuration schemas are young and differ per client, so this is reported rather than skipped: the scanner does not understand it, and saying nothing would be indistinguishable from saying it is safe.",
+      "remediation": "Read the entry yourself. If this shape is common, it belongs in the rule set - please open an issue with it."
     }
   ],
   "shellCommands": [
@@ -227,10 +244,9 @@
   ],
   "bypassModes": [
     "bypasspermissions",
-    "bypass",
+    "dangerouslyskippermissions",
     "yolo",
-    "dangerously-skip-permissions",
-    "acceptedits"
+    "skippermissions"
   ],
   "wildcardAllowPatterns": [
     "^\\*$",

@@ -115,3 +115,18 @@ test('accepted residual risks are written down publicly', async () => {
       `the residual-risk section does not mention: ${phrase}`);
   }
 });
+
+test('the fixture counts in this table are the real ones', async () => {
+  // A claim table with a number in it drifts the moment a fixture is added, and
+  // then the one document whose job is keeping claims honest is itself stale.
+  const { readdir } = await import('node:fs/promises');
+  const security = await readFile(path.join(ROOT, 'SECURITY.md'), 'utf-8');
+  const dirs = async d => (await readdir(d, { withFileTypes: true })).filter(e => e.isDirectory()).length;
+
+  const clean = await dirs(path.join(ROOT, 'test', 'fixtures', 'clean'));
+  const vulnerable = await dirs(path.join(ROOT, 'test', 'fixtures', 'vulnerable'));
+
+  const claimed = n => new RegExp(`\\| ${n} (clean|hostile) fixtures`).test(security);
+  assert.ok(claimed(clean), `SECURITY.md does not say ${clean} clean fixtures, which is how many there are`);
+  assert.ok(claimed(vulnerable), `SECURITY.md does not say ${vulnerable} hostile fixtures, which is how many there are`);
+});

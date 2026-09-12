@@ -62,12 +62,17 @@ The second class, with its own inventory in [`rules/agent-settings-inventory.md`
 | The command is a path inside the tree, or an argument names a file inside it | **high** |
 | The command is a shell, downloads and runs code, or lives in `/tmp` or a hidden directory | **critical** |
 | A remote server declared with no credential material in `headers` or `env` | **medium** |
-| A hook that runs a command on an agent event | **high** |
-| A permission mode that skips the approval step (`bypassPermissions`, …) | **critical** |
+| A hook that runs a command on an agent event | **the same ladder as above** — `npx prettier --write` is informational, a script from the tree is high, a shell pipeline is critical |
+| A request to skip the approval step (`bypassPermissions`) | **high**, with the finding saying what the client actually does with it |
+| A server entry in a shape the scanner does not recognise | **medium** — not understood is not the same as not there |
 | A wildcard in `permissions.allow` | **high** |
 | A credential-shaped value | **high** |
 
 **If your own project ships its own MCP server**, that entry is reported at high — GuardSkill cannot tell a repository you wrote from one you were handed. Use `--fail-on critical`, or `--exclude` the path.
+
+**And the other way round: for a tree you were handed, scan with `--fail-on low`.** A server started as `npx -y @attacker/mcp-helper` is informational by design — the command is ordinary and the package name is the whole of the attack, and judging a package by its name is a registry-reputation question that needs the network. The default threshold will not fail on it. That default is tuned for your own repository in CI; a delivered directory is a different question and deserves the lower threshold and a reading of the list.
+
+`acceptEdits` and `plan` are **not** reported. The documentation is explicit about what `acceptEdits` permits — reads, file edits and common filesystem commands, with Bash and network still prompting — so calling it an approval bypass would be wrong on the facts, and it is one of the most-used settings there is.
 
 **What is deliberately not checked:** whether a remote MCP server *actually* requires authentication. That is only answerable by connecting to it, and this tool makes no network connections. The `mcp-remote-no-auth` finding reports what the file declares, and says so in its own text.
 
@@ -126,7 +131,7 @@ In CI:
 Or as an action, which pins the version for you:
 
 ```yaml
-- uses: soemoescode/guardskill@v0.5.0
+- uses: soemoescode/guardskill@v0.5.1
   with:
     fail-on: high          # critical, high, medium or low
     exclude: test/fixtures # comma-separated, optional
@@ -137,7 +142,7 @@ Or as an action, which pins the version for you:
 With SARIF, findings stop being a red cross and become rows in the repository's own code-scanning view, with the file, the line, and a status per finding:
 
 ```yaml
-- uses: soemoescode/guardskill@v0.5.0
+- uses: soemoescode/guardskill@v0.5.1
   with:
     sarif-file: guardskill.sarif
     fail-on: critical            # let the Security tab carry the rest

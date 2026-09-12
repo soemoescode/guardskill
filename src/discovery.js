@@ -20,11 +20,32 @@ const ALWAYS_SKIP = new Set(['.terraform', '.venv', '__pycache__']);
 const AGENT_DIRS = new Set(['.claude', '.vscode', '.cursor', '.gemini', '.windsurf']);
 const AGENT_DIR_FILES = new Set(['mcp.json', 'settings.json', 'settings.local.json']);
 
+/**
+ * Which agent settings file is this, if any?
+ *
+ * Matched through normaliseName(), the same helper looksLikeGitName() uses. The
+ * first version of this function compared with Set.has() on the exact name, so
+ * `.MCP.json` and `.claude/Settings.json` were invisible - while Windows and
+ * macOS, where most users of these agents are, fold case and hand the file to
+ * the agent regardless. That is F-06 all over again, in a new class. (review 03,
+ * R3-01)
+ *
+ * `exact` says whether the name matched without folding, so a case-sensitive
+ * volume can report the finding honestly instead of loudly: git and the agent do
+ * not read this file *here*, but they do on the two platforms above.
+ */
 export function agentFileKind(fileName, parentName) {
-  if (fileName === '.mcp.json') return 'mcp';
-  if (!AGENT_DIRS.has(parentName) || !AGENT_DIR_FILES.has(fileName)) return null;
-  return fileName === 'settings.local.json' ? 'local-settings'
-    : fileName === 'mcp.json' ? 'mcp' : 'settings';
+  const file = normaliseName(fileName);
+  const parent = normaliseName(parentName ?? '');
+  let kind = null;
+  if (file === '.mcp.json') kind = 'mcp';
+  else if (AGENT_DIRS.has(parent) && AGENT_DIR_FILES.has(file)) {
+    kind = file === 'settings.local.json' ? 'local-settings' : file === 'mcp.json' ? 'mcp' : 'settings';
+  }
+  if (!kind) return null;
+  const exact = fileName === '.mcp.json'
+    || (AGENT_DIRS.has(parentName) && AGENT_DIR_FILES.has(fileName));
+  return { kind, exact };
 }
 
 /** Windows ignores trailing spaces and dots in path names; git there does not see them. */
@@ -202,8 +223,16 @@ export async function discoverGitTargets(root, opts = {}) {
       if (isExcluded(rel)) continue;
 
       if (entry.isFile()) {
-        const kind = agentFileKind(entry.name, path.basename(dir));
-        if (kind) agentFiles.push({ file: full, relPath: rel, kind });
+        const match = agentFileKind(entry.name, path.basename(dir));
+        if (match) {
+          agentFiles.push({
+            file: full, relPath: rel, kind: match.kind,
+            // A name that only matched after folding case, on a volume that does
+            // not fold: live on Windows and macOS, inert here. Reported either
+            // way, at a severity that says which.
+            caseVariant: !match.exact && !caseInsensitive,
+          });
+        }
       }
 
       if (entry.isFile() && looksLikeGitName(entry.name)) {

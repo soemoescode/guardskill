@@ -32,7 +32,7 @@ inputs:
   version:
     description: 'GuardSkill version to run. Pin this to a fixed version.'
     required: false
-    default: '0.5.0'
+    default: '0.5.1'
 
 runs:
   using: 'composite'

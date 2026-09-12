@@ -19,7 +19,7 @@ const MAX_INCLUDE_DEPTH = 10;
 const AGENT_MATCH_TYPES = new Set([
   'command-shell', 'command-in-tree', 'remote-exec', 'args-in-tree',
   'remote-server-auth', 'agent-hooks', 'permission-bypass', 'permission-wildcard',
-  'command-suspicious-path',
+  'command-suspicious-path', 'shape-unknown',
   'credential-shape',
 ]);
 const AGENT_RULES_FILE = 'agent-settings-keys.json';

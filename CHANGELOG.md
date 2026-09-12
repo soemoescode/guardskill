@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.1 — 2026-09-12
+
+Six findings from the third independent review, all in the class that shipped yesterday. Four of them are mistakes the git class already made and had fixed; they were made again because the lessons lived in that code and its tests rather than anywhere a person would look while building something new. `CONTRIBUTING.md` now carries the list, which is the actual fix.
+
+**Security**
+
+- **R3-01** Agent settings file names are matched through the same normalisation git directory names use. `.MCP.json` and `.claude/Settings.json` were reported CLEAN with zero findings — on any platform — while Windows and macOS fold case and hand those files to the agent. On a case-sensitive volume a folded match is now capped at medium with the reason in the finding: inert here, live there. The claim row in `SECURITY.md` said "only the documented file names are read", with a test that froze the bug rather than catching it; both have been rewritten.
+- **R3-02** One hostile settings file can no longer silence a scan. A 360 KB `.mcp.json` nested 60,000 levels deep — inside the size limit, because size was bounded and depth was not — overflowed the stack, escaped the run, and turned a scan that had *already found a payload* into ERROR with zero findings. The leaf walk is now iterative with a depth cap, over-deep nesting is its own finding plus INCOMPLETE, and every file is scanned inside its own try/catch. Suppressing a scanner is cheaper than evading one; that route is closed.
+- **R3-03** A server entry the scanner does not recognise is reported instead of skipped. `{"command": ["sh", "-c", …]}` and a command nested under `transport` were silent. Both are now read properly, and anything with neither a recognised command nor a URL produces `mcp-server-shape-unknown` with the keys it does have as evidence. MCP schemas are young and differ per client — the scanner does not have to know every shape, but it may not present one it does not understand as an absence.
+- **R3-05** The bridge form of a remote server is checked. `npx -y mcp-remote https://…` is how most remote MCP servers are used today, and the auth check skipped any entry that had a command, so exactly that population went unexamined. URLs in arguments now count, and a command no longer switches the check off.
+
+**Correctness — the calibration was wrong in both directions**
+
+- **R3-04a** `acceptEdits` is no longer reported. The Claude Code documentation is explicit: it auto-approves reads, file edits and common filesystem commands, while Bash and network still prompt. Reporting one of the most-used settings there is as an approval bypass, at critical, was wrong on the facts. `plan` and `default` are silent too.
+- **R3-04b** `bypassPermissions` is still reported, at high rather than critical, and the finding now says what actually happens: Claude Code ignores the value when it comes from `.claude/settings.json` or `settings.local.json` and starts in Manual mode — those being exactly the files GuardSkill reads. The rule stays because other clients read the same shapes, and because a repository that ships the request has told you something either way.
+- **R3-04c** Hooks are graded on the same ladder as MCP commands instead of a flat high. `npx prettier --write $CLAUDE_FILE_PATHS` was failing the default build; it is informational now, a hook running a script from the tree is high, and a shell pipeline or a download-and-run is still critical. The everyday configuration from the review — `acceptEdits` plus a formatter hook — produced a critical and a high; it now produces nothing above informational, with a test that says so by name.
+
+**Documentation and reporting**
+
+- Agent findings carry a line number, so the README's promise of "the file, the line, and a status per finding" is true for both classes in SARIF.
+- The README says plainly that the default threshold does **not** fail on an MCP server definition, and that `--fail-on low` is the setting for a tree you were handed rather than one you wrote. That is the product's own use case, and the default was tuned for the other one.
+- The claim table said 29 clean and 22 hostile fixtures; there are 32 and 31. A test now compares those numbers with the directories, because the one document whose job is keeping claims honest should not be the one that drifts.
+- `CONTRIBUTING.md` gains "Adding a detection class": eight rules, each with the finding that earned it. Normalise names, say so when you do not understand something, bound every axis, isolate per file, grade by what the value names, check the vendor documentation before encoding a claim, make every promise a tested claim, and write the clean fixtures people actually use.
+
 ## 0.5.0 — 2026-09-12
 
 Two additions, and they belong in one release: a second detection class, and the place where its findings become visible.

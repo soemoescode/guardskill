@@ -16,6 +16,7 @@ GuardSkill runs on directories that are, by assumption, hostile. Everything it r
 - **The directory walk does not follow symlinks, and neither does config reading.** A config file that is a symlink, or whose resolved path leaves the scanned tree, is refused, reported, and marks the scan INCOMPLETE. The file is not read, so a delivered directory cannot point the scanner at `~/.gitconfig` and have its contents printed.
 - **No network access.** No outbound connections, no telemetry. Identical behaviour offline.
 - **No dependencies.** Nothing is installed alongside it.
+- **One bad file costs its own finding and nothing else.** A settings file that is unparsable, too large or nested past the limit is reported and marks the scan INCOMPLETE, and the failure is contained to that file. A run that has already found a payload cannot be turned into "nothing to report" by putting a second, harmless-looking file next to it — suppressing a scanner is cheaper than evading one, and that route is closed.
 - **A file it cannot read is a finding, not a pass.** A config or hook script that exists but cannot be opened is reported and marks the scan INCOMPLETE. Silence about a file that was never read would be the one failure mode a scanner cannot have.
 - **Bounded traversal and bounded reads.** Depth and entry count are capped; a config above 4 MB is reported rather than parsed. A walk that stops early is reported as INCOMPLETE, never as clean.
 - **The report cannot be rewritten by its subject.** Control characters are stripped from every field before it reaches a terminal or a Markdown file — values, paths, titles and explanations alike. A directory called `vendor<ESC>[2K\rNo findings` cannot erase the line it appears on. The JSON output keeps raw values, because it is not a terminal, with the escape character itself escaped.
@@ -39,8 +40,8 @@ Every behavioural claim in the README, this file, `SKILL.md` and the project pag
 | `--fail-on` moves severity only, never completeness | README | `--fail-on changes severity, never completeness` |
 | The JSON output is stable at `schemaVersion: 1` | README | `the JSON output matches the documented schema in all four states` |
 | The report cannot be rewritten by its subject | SECURITY | `a hostile value cannot rewrite the report it appears in` and `F-11 a hostile directory name cannot rewrite the report` |
-| 29 clean fixtures produce nothing above informational | README | `no medium-or-higher finding on any clean fixture` |
-| 22 hostile fixtures are each caught by their own rule | README | `each vulnerable fixture is detected by the rule it was written for` |
+| 32 clean fixtures produce nothing above informational | README | `no medium-or-higher finding on any clean fixture`, and `the fixture counts in this table are the real ones` keeps the number honest |
+| 31 hostile fixtures are each caught by their own rule | README | `each vulnerable fixture is detected by the rule it was written for` |
 | No real-world corpus repository produces a critical | README | `no corpus repository produces a critical finding` |
 | The rule set matches the published key inventory | README | `every rule in the ruleset appears in the inventory`, `every key marked covered names a rule that exists` |
 | The parser agrees with git, or declares why not — over a generated permutation of quote, comment and escape positions, not only hand-picked cases | inventory, CHANGELOG | `the parser agrees with git, or declares why it does not`, `every value git accepts is at least seen by the parser`, `the golden table records which git produced it` |
@@ -53,7 +54,12 @@ Every behavioural claim in the README, this file, `SKILL.md` and the project pag
 | A config that cannot be read is reported, never counted as clean | README, SECURITY | `an unreadable config is reported, not silently treated as clean` |
 | The agent-settings class never connects to anything, including for the remote-server check | README, SECURITY | `the agent class never reaches the network`, `the remote-server check reports what the file declares and says it did not connect` |
 | An MCP server started from PATH stays informational; a shell, a temporary path or a download-and-run is critical | README, inventory | `severity follows what the command names, not that a server exists`, `an ordinary MCP configuration never fails a default build` |
-| Only the documented agent settings file names are read | inventory | `only the documented file names are read` |
+| The documented agent settings file names are read, and matched the way git matches names, so a case variant is not invisible | inventory | `only the documented file names are read`, `a settings file whose name differs only in case is not invisible` |
+| A server entry in a shape the scanner does not recognise is reported, not skipped | inventory | `a server entry in an unfamiliar shape is reported, not skipped` |
+| One malformed settings file cannot suppress the rest of a scan | SECURITY | `one hostile settings file cannot silence the rest of the scan` |
+| Hooks and MCP commands are graded on the same severity ladder | inventory | `a hook gets the same severity ladder as a server command`, `an ordinary Claude Code project does not fail a default build` |
+| `acceptEdits` and `plan` are not reported; `bypassPermissions` is reported for what it actually does | inventory | `the permission modes people actually use stay silent`, `a request to skip the approval step is reported for what it is` |
+| Agent findings carry a line number, like git findings | README | `an agent finding carries a line number into the report` |
 | The agent rule set matches its published inventory | README | `every agent rule appears in the inventory, and the reverse` |
 | An agent settings file that cannot be parsed is reported, never counted as clean | README | `an agent settings file that cannot be parsed is reported, never counted as clean` |
 | SARIF `security-severity` is derived from GuardSkill's own severity, not from an invented CVSS score | README | `security-severity follows our severity, and is not invented` |

@@ -22,6 +22,12 @@ forgotten.
 | `.gemini/settings.json` | under a `.gemini` directory | Gemini CLI | covered |
 | `.windsurf/mcp.json` | under a `.windsurf` directory | Windsurf | covered |
 
+File names are matched the way git matches directory names: through the same
+normalisation `looksLikeGitName()` uses, so `.MCP.json` and `.claude/Settings.json`
+are found. On a case-sensitive volume a name that only matched after folding is
+capped at medium with the reason in the finding — the agent does not read it
+here, and it does on Windows and macOS.
+
 ## What is checked inside them
 
 | Construct | Rule | Severity |
@@ -33,11 +39,30 @@ forgotten.
 | `command` points at a temporary or hidden location (`/tmp`, a dot-directory) | `mcp-command-suspicious-path` | critical |
 | `args` name a file inside the scanned tree | `mcp-args-point-into-repo` | high |
 | A remote server (`url`) with no credential material in `headers` or `env` | `mcp-remote-no-auth` | medium |
-| `hooks` in agent settings | `agent-hook-command` | high |
-| A permission mode that skips approval (`bypassPermissions`, `acceptEdits`, …) | `agent-permission-bypass` | critical |
+| `hooks` in agent settings | `agent-hook-command` | **graded on the same ladder as a server command**: a tool from PATH is low, a script in the tree is high, a shell or download-and-run is critical |
+| A request to skip the approval step (`bypassPermissions`, `dangerouslySkipPermissions`) | `agent-permission-bypass` | high — see the note below on what Claude Code actually does with it |
 | A wildcard entry in `permissions.allow` | `agent-permission-wildcard` | high |
 | A credential-shaped value | `agent-secret-in-config` | high |
-| The file cannot be parsed or is too large | `agent-config-unparsable`, `agent-config-too-large` | medium, and the scan is INCOMPLETE |
+| A server entry in a shape this scanner does not recognise | `mcp-server-shape-unknown` | medium — not understood is not the same as not there |
+| The file cannot be parsed, is too large, or nests deeper than the limit | `agent-config-unparsable`, `agent-config-too-large`, `agent-config-too-deep` | medium, and the scan is INCOMPLETE |
+
+## Two notes on accuracy
+
+**`acceptEdits` is not a bypass and is not reported.** The Claude Code
+documentation says what it permits: *"Reads, file edits, and common filesystem
+commands (`mkdir`, `touch`, `mv`, `cp`, etc.)"*. Bash commands and network access
+still prompt. It is one of the most-used settings there is, and reporting it as
+an approval bypass was wrong on the facts. `plan` and `default` are likewise
+silent.
+
+**`bypassPermissions` from these files does not take effect in Claude Code.**
+From the same page: *"If you set `bypassPermissions` in those two files, it
+doesn't take effect either, and the session starts in Manual mode"* — those two
+files being `.claude/settings.json` and `.claude/settings.local.json`, exactly
+what GuardSkill reads. The rule stays, at high rather than critical, because
+other clients read the same shapes and need not be as careful, and because a
+repository that ships the request has told you something either way. The finding
+text says what actually happens instead of claiming the step is off.
 
 ## Deliberately out of scope
 
@@ -48,7 +73,7 @@ forgotten.
 | `.codex/config.toml` and other TOML-based agent settings | No TOML parser, and a scanner with no dependencies is not adding one for a single file format. Revisit when the format matters more than the promise. |
 | `~/.claude/settings.json` and other user-level settings | Outside the scanned tree by definition. GuardSkill inspects what a repository delivers, not what you already had. |
 | `.github/workflows/*` and other CI definitions | A different threat model with its own tooling. Naming it here so the gap is a decision rather than an oversight. |
-| Whether an npm or PyPI package started by an MCP server is itself malicious | That is a registry-reputation question, and answering it needs the network. |
+| Whether an npm or PyPI package started by an MCP server is itself malicious | That is a registry-reputation question, and answering it needs the network. Note the consequence: `npx -y @attacker/mcp-helper` is reported at **low**, so the default threshold does not fail on it. For a tree you were handed rather than one you wrote, scan with `--fail-on low`. |
 
 ## Note on severity
 
