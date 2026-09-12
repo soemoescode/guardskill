@@ -88,6 +88,13 @@
       "title": "Agent settings file nested beyond the inspection limit",
       "explanation": "This file nests deeper than GuardSkill walks, so the part below the limit was not inspected. A settings file nested that deeply is itself unusual, and a file shaped to exhaust a scanner is a way to make it say nothing about everything else.",
       "remediation": "Open the file yourself before running an agent here."
+    },
+    {
+      "id": "agent-findings-capped",
+      "severity": "medium",
+      "title": "More findings in this file than the report will list",
+      "explanation": "This file produced more findings of one rule than GuardSkill prints for a single file. The rest are counted, not listed. A settings file that repeats the same problem thousands of times is either generated or built to flood the report - and a report nobody can read, or a SARIF upload GitHub refuses for being too large, is a finding that never reaches anyone.",
+      "remediation": "Open the file and look at it yourself; the count tells you how much of it repeats."
     }
   ],
   "rules": [
@@ -128,7 +135,7 @@
       "matchType": "remote-server-auth",
       "severity": "medium",
       "title": "Remote MCP server declared without any authentication material",
-      "explanation": "This entry points an agent at a remote MCP server and carries no header, token or environment variable that looks like a credential. This is an observation about the configuration in this file - GuardSkill makes no network connections, so it has not asked the server whether it requires authentication.",
+      "explanation": "This entry points an agent at a remote MCP server and carries no header, token or environment variable that looks like a credential. This is an observation about the configuration in this file - GuardSkill makes no network connections, so it has not asked the server whether it requires authentication. A URL in the arguments only counts when the command is a known bridge such as `mcp-remote`; a documentation link or a registry URL among the arguments is not an endpoint.",
       "remediation": "Check who operates that endpoint and whether it should be authenticated."
     },
     {
@@ -263,5 +270,12 @@
     "/\\\\.[A-Za-z0-9_-]+/",
     "^~?/\\\\.",
     "AppData\\\\\\\\Local\\\\\\\\Temp"
+  ],
+  "remoteBridgeCommands": [
+    "mcp-remote",
+    "mcp-proxy",
+    "supergateway",
+    "mcp-remote-client",
+    "mcp-superassistant-proxy"
   ]
 }

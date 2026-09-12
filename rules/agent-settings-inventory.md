@@ -10,6 +10,11 @@ documentation as of September 2026. A test fails if this table and
 `agent-settings-keys.json` drift apart, so a gap is visible rather than
 forgotten.
 
+In this file a backticked `mcp-…` or `agent-…` token means **a rule id**, and a
+test checks both directions: a rule that is not named here fails, and a name here
+that is not a rule fails too. Command and package names are set in bold instead,
+so the check stays strict.
+
 ## Files read
 
 | File | Where | Read by | Status |
@@ -38,12 +43,13 @@ here, and it does on Windows and macOS.
 | `command` or `args` download and run code | `mcp-fetches-remote-code` | critical |
 | `command` points at a temporary or hidden location (`/tmp`, a dot-directory) | `mcp-command-suspicious-path` | critical |
 | `args` name a file inside the scanned tree | `mcp-args-point-into-repo` | high |
-| A remote server (`url`) with no credential material in `headers` or `env` | `mcp-remote-no-auth` | medium |
-| `hooks` in agent settings | `agent-hook-command` | **graded on the same ladder as a server command**: a tool from PATH is low, a script in the tree is high, a shell or download-and-run is critical |
+| A remote server with no credential material in `headers` or `env` — either a declared `url`, or a URL in the arguments of a known bridge (**mcp-remote**, **mcp-proxy**, **supergateway**) | `mcp-remote-no-auth` | medium |
+| `hooks` in agent settings — **one finding per hook**, with the reason it was graded that way inside it | `agent-hook-command` | **graded on the same ladder as a server command**: a tool from PATH is low, a script in the tree is high, a shell or download-and-run is critical |
 | A request to skip the approval step (`bypassPermissions`, `dangerouslySkipPermissions`) | `agent-permission-bypass` | high — see the note below on what Claude Code actually does with it |
 | A wildcard entry in `permissions.allow` | `agent-permission-wildcard` | high |
 | A credential-shaped value | `agent-secret-in-config` | high |
 | A server entry in a shape this scanner does not recognise | `mcp-server-shape-unknown` | medium — not understood is not the same as not there |
+| More than 50 findings of one rule in a single file | `agent-findings-capped` | medium — the rest are counted, not listed, so the report stays readable and a SARIF upload stays inside GitHub's limits |
 | The file cannot be parsed, is too large, or nests deeper than the limit | `agent-config-unparsable`, `agent-config-too-large`, `agent-config-too-deep` | medium, and the scan is INCOMPLETE |
 
 ## Two notes on accuracy
@@ -70,6 +76,7 @@ text says what actually happens instead of claiming the step is off.
 |---|---|
 | Whether a remote MCP server *actually* requires authentication | Only answerable by connecting to it. GuardSkill makes no network connections, and that promise is worth more than this check. `mcp-remote-no-auth` reports what the file declares, and says so in the finding. |
 | The full permission scope of an MCP server's tools | Requires starting the server and listing its tools. Same reason: that is a runtime audit, not a file scan. |
+| A URL among the arguments of anything that is not a known bridge | A `--registry` or `--docs` argument is not an MCP endpoint. Reporting every URL made the check noisy in the one class that had just been calibrated, so it is limited to the bridge commands named above and to a declared `url` field. A hand-rolled bridge is missed; that is the price of not crying wolf. |
 | `.codex/config.toml` and other TOML-based agent settings | No TOML parser, and a scanner with no dependencies is not adding one for a single file format. Revisit when the format matters more than the promise. |
 | `~/.claude/settings.json` and other user-level settings | Outside the scanned tree by definition. GuardSkill inspects what a repository delivers, not what you already had. |
 | `.github/workflows/*` and other CI definitions | A different threat model with its own tooling. Naming it here so the gap is a decision rather than an oversight. |

@@ -131,7 +131,7 @@ In CI:
 Or as an action, which pins the version for you:
 
 ```yaml
-- uses: soemoescode/guardskill@v0.5.1
+- uses: soemoescode/guardskill@v0.5.2
   with:
     fail-on: high          # critical, high, medium or low
     exclude: test/fixtures # comma-separated, optional
@@ -142,7 +142,7 @@ Or as an action, which pins the version for you:
 With SARIF, findings stop being a red cross and become rows in the repository's own code-scanning view, with the file, the line, and a status per finding:
 
 ```yaml
-- uses: soemoescode/guardskill@v0.5.1
+- uses: soemoescode/guardskill@v0.5.2
   with:
     sarif-file: guardskill.sarif
     fail-on: critical            # let the Security tab carry the rest
@@ -152,6 +152,8 @@ With SARIF, findings stop being a red cross and become rows in the repository's 
   with:
     sarif_file: guardskill.sarif
 ```
+
+At most 50 findings per rule per file are listed, with the remainder counted in one summary finding — a settings file with thousands of identical problems otherwise produces a SARIF document GitHub refuses to accept, and then the Security tab shows nothing at all.
 
 `--sarif` writes the same document to stdout, and `--sarif-out <file>` writes it alongside the readable report rather than instead of it. The severity mapping is stated rather than guessed: critical and high become `error`, medium `warning`, low `note`, and `security-severity` — the number GitHub sorts on — is derived from those same four levels. GuardSkill computes no CVSS score, and filling that field from one would be a claim it cannot support. An incomplete scan travels too, as a tool notification on the run: a Security tab that quietly shows nothing about a tree half of which was never opened would be the same failure as exiting 0 on it.
 

@@ -76,6 +76,31 @@ function looksLikeCredential(rules, key, value) {
 
 const MAX_JSON_DEPTH = 100;
 
+// How many findings of one rule a single file may contribute.
+//
+// Measured on a 964 KB .mcp.json with 15,000 shell servers: 30,000 findings and
+// a 21.8 MB SARIF document. GitHub refuses a SARIF upload above 25,000 results
+// or 10 MB, so an oversized settings file made the Security tab show *nothing* -
+// the same shape as one file suppressing a whole scan, one surface further out.
+// The rest are counted rather than listed. (review 04, R4-03)
+export const MAX_FINDINGS_PER_RULE_PER_FILE = 50;
+
+function capPerRule(rules, findings, relPath) {
+  const counts = new Map();
+  const kept = [];
+  for (const f of findings) {
+    const n = (counts.get(f.ruleId) ?? 0) + 1;
+    counts.set(f.ruleId, n);
+    if (n <= MAX_FINDINGS_PER_RULE_PER_FILE) kept.push(f);
+  }
+  for (const [ruleId, n] of counts) {
+    if (n <= MAX_FINDINGS_PER_RULE_PER_FILE) continue;
+    kept.push(finding(rules, 'agent-findings-capped', relPath,
+      `${ruleId}: ${n} findings in this file, ${MAX_FINDINGS_PER_RULE_PER_FILE} listed, ${n - MAX_FINDINGS_PER_RULE_PER_FILE} not shown`));
+  }
+  return kept;
+}
+
 /**
  * Walk a parsed JSON document, yielding [pathString, value] for every leaf.
  *
@@ -123,6 +148,16 @@ function serverEntries(doc) {
   return out;
 }
 
+// Why a hook was graded the way it was, in the hook's own words. The MCP rule
+// texts talk about servers, and a hook is not one.
+const HOOK_REASON = {
+  'mcp-command-shell': 'runs through a shell, so the arguments are an arbitrary command line',
+  'mcp-command-suspicious-path': 'runs from a temporary or hidden location',
+  'mcp-fetches-remote-code': 'downloads code and runs it',
+  'mcp-command-in-repo': 'runs a program that came with the repository',
+  'mcp-args-point-into-repo': 'loads a file that came with the repository',
+};
+
 const URL_IN_TEXT = /\bhttps?:\/\/[^\s"']+/i;
 
 /**
@@ -146,18 +181,26 @@ function commandOf(entry) {
   return { command: '', args: [] };
 }
 
-function urlOf(entry, args) {
+function urlOf(rules, entry, command, args) {
   for (const holder of [entry, entry.transport, entry.connection]) {
     if (!holder || typeof holder !== 'object') continue;
     for (const key of ['url', 'serverUrl', 'endpoint', 'uri']) {
       if (typeof holder[key] === 'string' && holder[key].trim()) return holder[key];
     }
   }
+
   // The bridge form: `npx -y mcp-remote https://…`. The URL is the whole point of
-  // the entry, and skipping the auth check because a command happens to be
+  // that entry, and skipping the auth check because a command happened to be
   // present left the most common remote setup unexamined. (review 03, R3-05)
-  const inArgs = args.map(a => (a.match(URL_IN_TEXT) || [])[0]).find(Boolean);
-  return inArgs ?? null;
+  //
+  // But only for a bridge. Taking *any* URL in the arguments made
+  // `--registry https://registry.npmjs.org` read as an MCP endpoint without
+  // authentication, which it is not - noise in the one class that had just been
+  // calibrated. A documentation link is not an endpoint. (review 04, R4-02)
+  const bridges = rules.remoteBridgeCommands ?? [];
+  const words = [baseName(command), ...args.map(a => baseName(a))];
+  if (!words.some(w => bridges.includes(w.replace(/@.*$/, '')))) return null;
+  return args.map(a => (a.match(URL_IN_TEXT) || [])[0]).find(Boolean) ?? null;
 }
 
 function checkServer(rules, name, entry, location, fileDir, root) {
@@ -180,7 +223,7 @@ function checkServer(rules, name, entry, location, fileDir, root) {
   // the command rules have already said something much sharper about it. Only a
   // declared `url`, or a URL in the arguments of an ordinary command, counts as
   // a remote server.
-  const url = urlOf(entry, shellish ? [] : args);
+  const url = urlOf(rules, entry, command, shellish ? [] : args);
   if (url) {
     const headerKeys = Object.keys(entry.headers ?? entry.transport?.headers ?? {}).map(k => k.toLowerCase());
     const envKeys = Object.keys(entry.env ?? {}).map(k => k.toLowerCase());
@@ -259,10 +302,22 @@ function checkSettings(rules, doc, location, fileDir, root) {
       const words = value.trim().split(/\s+/);
       const { escalated, hits } = gradeCommand(rules, words[0], words.slice(1), fileDir, root);
       const r = rules.byId['agent-hook-command'];
-      found.push(finding(rules, 'agent-hook-command', location, `hooks.${pathString} = ${value}`,
+
+      // One hook, one finding. Emitting the MCP rule alongside it printed every
+      // hook twice at the same severity, and the second line claimed there was
+      // an MCP server that did not exist - which is also the id people suppress
+      // on in SARIF, so silencing an MCP rule would have silenced hooks too.
+      // The reason travels inside the hook finding instead. (review 04, R4-01)
+      const why = hits.map(([id]) => HOOK_REASON[id]).filter(Boolean);
+      const f = finding(rules, 'agent-hook-command', location,
+        `hooks.${pathString} = ${value}`,
         escalated === 'critical' ? (r.escalatedSeverity ?? 'critical')
-          : escalated ? escalated : (r.baseSeverity ?? r.severity)));
-      for (const [id, evidence] of hits) found.push(finding(rules, id, location, `hook: ${evidence}`));
+          : escalated ? escalated : (r.baseSeverity ?? r.severity));
+      if (why.length) {
+        f.evidence = cap(`hooks.${pathString} = ${value}  [${why.join('; ')}]`);
+        f.explanation += ` Here: ${why.join('; ')}.`;
+      }
+      found.push(f);
     }
   }
 
@@ -343,7 +398,7 @@ function lineOf(text, needle) {
 }
 
 async function scanOneAgentFile(root, { file, relPath, kind, caseVariant }, rules, incomplete) {
-  const findings = [];
+  let findings = [];
 
   const safe = await safeToRead(file, root);
   if (!safe.ok) {
@@ -391,6 +446,13 @@ async function scanOneAgentFile(root, { file, relPath, kind, caseVariant }, rule
   if (tooDeep) {
     incomplete.add(`agent settings nested deeper than the inspection limit: ${relPath}`);
     findings.push(finding(rules, 'agent-config-too-deep', relPath, `nesting beyond ${MAX_JSON_DEPTH} levels`));
+  }
+
+  // Cap before the case-variant pass, so the cap's own finding is capped too if
+  // the file is a variant.
+  findings = capPerRule(rules, findings, relPath);
+  if (findings.some(f => f.ruleId === 'agent-findings-capped')) {
+    incomplete.add(`not every finding in this file is listed: ${relPath}`);
   }
 
   if (caseVariant) {

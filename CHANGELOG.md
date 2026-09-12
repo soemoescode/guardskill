@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.2 — 2026-09-12
+
+Three findings from the fourth independent review, all of them in the code that the 0.5.1 fixes touched. None was blocking; all three are the kind of thing that makes a report worth less than the scan behind it.
+
+- **R4-01** A hook produces one finding again. Reusing the MCP severity ladder for hooks was the right fix, but it emitted the MCP rule alongside the hook rule: two findings at the same severity for one hook, the second announcing an MCP server that did not exist. `ruleId` is also the field people suppress on in SARIF, so silencing a noisy MCP rule would have silenced hooks with it. The grading is unchanged; the reason now travels inside the hook finding — `[runs from a temporary or hidden location]` — instead of as a second line that says something untrue.
+- **R4-02** A URL among the arguments only counts as an endpoint when the command is a known bridge (**mcp-remote**, **mcp-proxy**, **supergateway**). Taking every URL turned `--registry https://registry.npmjs.org` into a remote MCP server without authentication. "The last positional argument" does not separate the two either — in the counter-example the last argument is a documentation link. A hand-rolled bridge is missed now; that is the price of not crying wolf in the class that had just been calibrated.
+- **R4-03** At most 50 findings per rule per file are listed, the rest counted in one summary finding, and the scan declares itself incomplete. A 964 KB `.mcp.json` with 15,000 shell servers produced 30,000 findings and a 21.8 MB SARIF document; GitHub refuses an upload above 25,000 results or 10 MB, so the Security tab showed nothing at all. That is the same shape as one file suppressing a whole scan, one surface further out: the finding existed and never reached anyone.
+
+The review's headline — that 0.5.1 was tagged but not published — was already resolved when it was written: the release workflow succeeded at 15:02 UTC and `npx guardskill@latest` has reported 0.5.1 since. The failed run before it was the commit with a test that asserted the case-sensitive branch on every platform, which macOS caught.
+
 ## 0.5.1 — 2026-09-12
 
 Six findings from the third independent review, all in the class that shipped yesterday. Four of them are mistakes the git class already made and had fixed; they were made again because the lessons lived in that code and its tests rather than anywhere a person would look while building something new. `CONTRIBUTING.md` now carries the list, which is the actual fix.

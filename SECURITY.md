@@ -16,6 +16,7 @@ GuardSkill runs on directories that are, by assumption, hostile. Everything it r
 - **The directory walk does not follow symlinks, and neither does config reading.** A config file that is a symlink, or whose resolved path leaves the scanned tree, is refused, reported, and marks the scan INCOMPLETE. The file is not read, so a delivered directory cannot point the scanner at `~/.gitconfig` and have its contents printed.
 - **No network access.** No outbound connections, no telemetry. Identical behaviour offline.
 - **No dependencies.** Nothing is installed alongside it.
+- **No single file can drown the report.** At most 50 findings per rule per file are listed; the rest are counted in one summary finding, and the scan says it is not listing everything. A settings file with 15,000 hostile entries otherwise produced a 21.8 MB SARIF document, and GitHub refuses an upload above 25,000 results or 10 MB — so the Security tab would have shown nothing at all. A finding that cannot reach the person reading it is the same failure as not finding it.
 - **One bad file costs its own finding and nothing else.** A settings file that is unparsable, too large or nested past the limit is reported and marks the scan INCOMPLETE, and the failure is contained to that file. A run that has already found a payload cannot be turned into "nothing to report" by putting a second, harmless-looking file next to it — suppressing a scanner is cheaper than evading one, and that route is closed.
 - **A file it cannot read is a finding, not a pass.** A config or hook script that exists but cannot be opened is reported and marks the scan INCOMPLETE. Silence about a file that was never read would be the one failure mode a scanner cannot have.
 - **Bounded traversal and bounded reads.** Depth and entry count are capped; a config above 4 MB is reported rather than parsed. A walk that stops early is reported as INCOMPLETE, never as clean.
@@ -60,6 +61,9 @@ Every behavioural claim in the README, this file, `SKILL.md` and the project pag
 | Hooks and MCP commands are graded on the same severity ladder | inventory | `a hook gets the same severity ladder as a server command`, `an ordinary Claude Code project does not fail a default build` |
 | `acceptEdits` and `plan` are not reported; `bypassPermissions` is reported for what it actually does | inventory | `the permission modes people actually use stay silent`, `a request to skip the approval step is reported for what it is` |
 | Agent findings carry a line number, like git findings | README | `an agent finding carries a line number into the report` |
+| A hook produces one finding, carrying a hook rule id | inventory | `a hook produces exactly one finding, and it is about a hook` |
+| A URL in an argument counts as an endpoint only for a known bridge | inventory | `a URL among the arguments is only an endpoint when the command is a bridge` |
+| No single file can flood the report or push a SARIF upload past GitHub's limits | SECURITY | `one file cannot flood the report or the SARIF upload` |
 | The agent rule set matches its published inventory | README | `every agent rule appears in the inventory, and the reverse` |
 | An agent settings file that cannot be parsed is reported, never counted as clean | README | `an agent settings file that cannot be parsed is reported, never counted as clean` |
 | SARIF `security-severity` is derived from GuardSkill's own severity, not from an invented CVSS score | README | `security-severity follows our severity, and is not invented` |
