@@ -210,9 +210,13 @@ async function main() {
   await mkdir(path.join(nestHost, 'examples', 'demo', '.git', 'hooks'), { recursive: true });
   await writeFile(path.join(nestHost, 'examples', 'demo', '.git', 'config'), '[core]\n\tfsmonitor = ./run.sh\n', 'utf-8');
 
-  const cleanCount = Object.keys(CLEAN_FIXTURES).length + 3;
-  const vulnCount = Object.keys(VULN_FIXTURES).length + 4;
-  console.log(`fixtures: ${cleanCount} clean, ${vulnCount} vulnerable`);
+  // Counted from the directories, not from the two objects plus a hand-kept
+  // offset. The offset was stale the moment the agent fixtures were added, and a
+  // generator that misreports what it generated is a small lie in the one place
+  // the suite looks first.
+  const { readdir } = await import('node:fs/promises');
+  const count = async d => (await readdir(d, { withFileTypes: true })).filter(e => e.isDirectory()).length;
+  console.log(`fixtures: ${await count(CLEAN)} clean, ${await count(VULN)} vulnerable`);
 }
 
 import { pathToFileURL } from 'node:url';
