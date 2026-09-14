@@ -1,11 +1,11 @@
 ---
 name: guardskill
-description: Scan a project for git settings and hook scripts that make a coding agent execute code when it opens the folder (the GitSpawn research and CVE-2026-45033). Use before opening an unfamiliar, downloaded, forked or client-supplied repository, after merging an outside contribution, and periodically on active projects.
+description: Scan a project for the settings that make a coding agent execute code when it opens the folder: git configuration and hook scripts (the GitSpawn research and CVE-2026-45033), and committed agent settings and MCP server definitions (.mcp.json, .claude/settings.json and equivalents). Use before opening an unfamiliar, downloaded, forked or client-supplied repository, after merging an outside contribution, and periodically on active projects.
 ---
 
 # GuardSkill
 
-A read-only scanner. It reads git configuration and hook scripts, reports what it finds, and changes nothing in the project it inspects.
+A read-only scanner. It reads git configuration, hook scripts and committed agent settings, reports what it finds, and changes nothing in the project it inspects.
 
 ## When to use it
 
@@ -52,4 +52,4 @@ A finding is a signal to investigate, not proof of malice. Some patterns are leg
 
 ## Limits
 
-This covers git-level execution vectors. Four executing keys are deliberately out of scope, listed with reasons in `rules/git-exec-keys-inventory.md`. It does not check npm dependencies, agent settings files, or MCP server definitions.
+This covers git-level execution vectors and the committed agent settings and MCP server definitions that travel with an ordinary clone. Coverage is listed key by key, with a source and a status for each, in `rules/git-exec-keys-inventory.md` and `rules/agent-settings-inventory.md`; four executing git keys are deliberately out of scope, with reasons. It does not check npm dependencies or package lifecycle scripts.
