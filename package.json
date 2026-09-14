@@ -1,7 +1,7 @@
 {
   "name": "guardskill",
   "version": "0.5.2",
-  "description": "Read-only scanner for the git settings that let a repository run code in a coding agent (Claude Code, Codex, Cursor, Copilot, Goose): fsmonitor, filters, hooks, aliases, includes, bare repositories in the tree. No dependencies, no network.",
+  "description": "Read-only scanner for what makes a coding agent (Claude Code, Codex, Cursor, Copilot, Goose) execute code when it opens a project: git settings — fsmonitor, filters, hooks, aliases, includes, bare repositories in the tree — and committed agent settings and MCP server definitions. SARIF output. No dependencies, no network.",
   "type": "module",
   "bin": {
     "guardskill": "bin/guardskill.js"
@@ -41,7 +41,12 @@
     "gitspawn",
     "supply-chain",
     "static-analysis",
-    "cli"
+    "cli",
+    "mcp",
+    "sarif",
+    "agent-security",
+    "code-scanning",
+    "devsecops"
   ],
   "files": [
     "bin",
