@@ -67,3 +67,41 @@ class is proposed, not after it is reviewed.
    people really use. The three clean agent fixtures did not include the two
    most common configurations in the wild, which is why the calibration error
    reached a release.
+
+## Releasing
+
+Most of this is automated. The two things that are not are listed last, and they
+are the two that were forgotten five times in a row — so they are written down
+rather than remembered.
+
+1. Update `package.json`, the `version` default in `action.yml`, and the
+   `@vX.Y.Z` examples in `README.md`. A test compares the first two; a release
+   where they disagree means every Marketplace user keeps scanning with the old
+   rules while the listing names the new tag.
+2. Add the section to `CHANGELOG.md`. The release workflow publishes exactly that
+   text as the release notes, so it is the last moment it is worth writing well.
+3. Commit, tag `vX.Y.Z`, push the branch and then the tag.
+
+The tag starts `release.yml`: nine verify combinations, then publish to npm with
+provenance through OIDC, then a GitHub release created from the changelog entry.
+
+**By hand, after the run is green:**
+
+4. Move the major-version tag, so everyone pinned to `@v0` moves with the
+   release:
+
+   ```
+   git tag -f v0 vX.Y.Z
+   git push -f origin v0
+   ```
+
+5. Open the new release and tick **Publish this Action to the GitHub
+   Marketplace**. A release created through the API does not reliably reach the
+   Marketplace — publication needs a confirmation step that only exists in the
+   browser — so this one click stays manual. Afterwards, check that
+   `github.com/marketplace/actions/guardskill-scan` names the new version. If it
+   does not, edit the release, untick and retick the box.
+
+Both steps are invisible from the terminal and both were skipped for 0.5.0,
+0.5.1 and 0.5.2. If you are reading this because the listing is stale again, it
+is step 4 or step 5.

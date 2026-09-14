@@ -52,3 +52,47 @@ jobs:
       # stored in a repository secret -- which is the same class of problem this
       # tool reports in other repositories.
       - run: npm publish --provenance --access public
+
+  # The shop window.
+  #
+  # Five versions reached npm while one release object existed, because creating
+  # it was a manual step in a browser at the end of an otherwise automated
+  # pipeline. The Marketplace listing follows the latest release, so it kept
+  # handing every visitor an install line for a version from five releases back.
+  # A step that is only sometimes performed is a step that belongs in the
+  # workflow; the notes are the changelog entry, and nobody needs to retype them.
+  #
+  # `contents: write` lives in this job and nowhere else. It is deliberately not
+  # in the publish job: the job that holds the OIDC token npm publishes with
+  # should not also be able to write to the repository, because the tags are what
+  # the provenance attestations are anchored to.
+  #
+  # What this job does NOT do is move the `v0` tag. Rewriting a shared tag from
+  # CI is a bigger hammer than a release object needs, and while the cadence is a
+  # release every few days it is one command by hand - see CONTRIBUTING.md.
+  release-object:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Take the release notes from the changelog
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          node tools/changelog-section.mjs "$version" > notes.md
+          {
+            printf '\n---\n\n'
+            printf 'Install: `npx guardskill@%s .`\n\n' "$version"
+            printf 'In CI: `uses: soemoescode/guardskill@%s`\n' "$GITHUB_REF_NAME"
+          } >> notes.md
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file notes.md \
+            --latest

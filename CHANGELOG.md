@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+Release process, not product behaviour. Nothing here changes what a scan finds.
+
+- The GitHub release is created by the release workflow, from the changelog entry for the version being released. Five versions reached npm while one release object existed, because creating it was a manual step in a browser at the end of an otherwise automated pipeline — and the Marketplace listing follows the latest release, so it kept handing visitors an install line for a version five releases back. A step that is only sometimes performed belongs in the workflow.
+- `contents: write` lives in that new job and nowhere else. It is deliberately not in the publish job: the job holding the OIDC token npm publishes with should not also be able to write to the repository, because the tags are what the provenance attestations are anchored to. `test/release.test.js` fails if those two permissions ever end up in the same job.
+- `tools/changelog-section.mjs` extracts one version's section, with a test that it takes exactly one and that a partial version number matches nothing.
+- Moving the `v0` tag stays a manual command. Rewriting a shared tag from CI is a bigger hammer than a release object needs, and at this cadence it is one line — it is in the release checklist in `CONTRIBUTING.md` now, which is where it should have been all along.
+
 ## 0.5.2 — 2026-09-12
 
 Three findings from the fourth independent review, all of them in the code that the 0.5.1 fixes touched. None was blocking; all three are the kind of thing that makes a report worth less than the scan behind it.
